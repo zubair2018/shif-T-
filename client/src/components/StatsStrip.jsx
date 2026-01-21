@@ -1,4 +1,5 @@
 // src/components/StatsStrip.jsx
+// this file is not included in this project
 const StatsStrip = () => {
   const stats = [
     { label: "Trips completed", value: "10K+" },
