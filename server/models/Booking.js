@@ -1,41 +1,39 @@
-// backend/models/Booking.js
+// server/models/Booking.js
 const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    name: {
+    customerName: { type: String, required: true },
+    customerPhone: { type: String, required: true },
+
+    pickupCity: { type: String, required: true },
+    pickupAddress: { type: String, required: true },
+    dropCity: { type: String, required: true },
+    dropAddress: { type: String, required: true },
+
+    loadType: {
       type: String,
-      required: [true, "Name is required"],
-      trim: true,
+      enum: ["mini", "medium", "heavy"],
+      required: true,
     },
-    phone: {
-      type: String,
-      required: [true, "Phone is required"],
-      trim: true,
-    },
-    pickup: {
-      type: String,
-      required: [true, "Pickup location is required"],
-      trim: true,
-    },
-    drop: {
-      type: String,
-      required: [true, "Drop location is required"],
-      trim: true,
-    },
-    date: {
-      type: String,
-      required: [true, "Date is required"],
-    },
-    notes: {
-      type: String,
-      trim: true,
-    },
+    weightTons: Number,
+
     status: {
       type: String,
-      enum: ["pending", "assigned", "completed", "cancelled"],
-      default: "pending",
+      enum: [
+        "PENDING",
+        "SEARCHING_DRIVER",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED",
+      ],
+      default: "PENDING",
     },
+
+    requestedDrivers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Driver" }],
+    assignedDriver: { type: mongoose.Schema.Types.ObjectId, ref: "Driver" },
+    expiresAt: Date,
   },
   { timestamps: true }
 );

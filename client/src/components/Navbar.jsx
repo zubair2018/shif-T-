@@ -1,7 +1,7 @@
 // src/components/Navbar.jsx
 import { useState } from "react";
 
-const Navbar = () => {
+const Navbar = ({ onBookClick, onPartnerClick }) => {
   const [open, setOpen] = useState(false);
   const toggleMenu = () => setOpen((prev) => !prev);
 
@@ -15,64 +15,77 @@ const Navbar = () => {
   };
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-slate-950/80 backdrop-blur border-b border-slate-800/80">
-      <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        {/* logo */}
-        <div className="flex items-center gap-2">
+    <header className="fixed top-0 inset-x-0 z-50 bg-slate-950/90 backdrop-blur border-b border-slate-800/80">
+      <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
+        {/* Logo + brand */}
+        <button
+          type="button"
+          onClick={(e) => handleNavClick(e, "#top")}
+          className="flex items-center gap-2"
+        >
           <div className="h-8 w-8 rounded-xl bg-yellow-400 flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.6)]">
             <div className="relative h-5 w-5">
               <div className="absolute inset-0 rounded-full bg-slate-950" />
               <div className="absolute inset-1 rounded-full border-2 border-slate-700 border-dashed" />
             </div>
           </div>
-          <span className="font-semibold text-lg tracking-tight">Shifty</span>
-        </div>
+          <div className="flex flex-col items-start">
+            <span className="font-semibold text-base leading-tight">
+              Shifty
+            </span>
+            <span className="text-[10px] uppercase tracking-wide text-slate-400">
+              Mini trucks · big moves
+            </span>
+          </div>
+        </button>
 
-        {/* desktop links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm text-slate-200">
-          <a
-            href="#how"
+        {/* Desktop nav links */}
+        <nav className="hidden md:flex items-center gap-5 text-sm text-slate-200">
+          <button
             onClick={(e) => handleNavClick(e, "#how")}
             className="hover:text-yellow-400 transition-colors"
           >
             How it works
-          </a>
-          <a
-            href="#services"
+          </button>
+          <button
             onClick={(e) => handleNavClick(e, "#services")}
             className="hover:text-yellow-400 transition-colors"
           >
             Services
-          </a>
-          <a
-            href="#owners"
+          </button>
+          <button
             onClick={(e) => handleNavClick(e, "#owners")}
             className="hover:text-yellow-400 transition-colors"
           >
             For truck owners
-          </a>
-          <a
-            href="#download"
+          </button>
+          <button
             onClick={(e) => handleNavClick(e, "#download")}
             className="hover:text-yellow-400 transition-colors"
           >
             Download app
-          </a>
+          </button>
         </nav>
 
-        {/* right: Download app only */}
-        <div className="flex items-center gap-3">
-          <a
-            href="#download"
+        {/* Right side: primary actions + hamburger */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onBookClick}
+            className="hidden sm:inline-flex px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full bg-yellow-400 text-slate-950 hover:bg-yellow-300 transition-colors shadow-[0_0_20px_rgba(250,204,21,0.6)]"
+          >
+            Book a truck
+          </button>
+
+          <button
             onClick={(e) => handleNavClick(e, "#download")}
-            className="hidden sm:inline-flex px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full bg-yellow-400 text-slate-950 hover:bg-yellow-300 transition-colors shadow-[0_0_24px_rgba(250,204,21,0.5)]"
+            className="hidden lg:inline-flex px-3 py-1.5 text-xs font-medium rounded-full border border-slate-600 text-slate-200 hover:border-yellow-300 hover:text-yellow-300 transition-colors"
           >
             Download app
-          </a>
+          </button>
 
-          {/* hamburger */}
+          {/* Mobile hamburger */}
           <button
-            className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 text-slate-200"
+            className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 text-slate-200"
             onClick={toggleMenu}
             aria-label="Toggle navigation"
           >
@@ -97,37 +110,40 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* Mobile dropdown */}
       {open && (
         <div className="md:hidden border-t border-slate-800 bg-slate-950/95">
           <div className="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-2 text-sm text-slate-200">
-            <a
-              href="#how"
-              className="py-1 hover:text-yellow-400"
+            <button
               onClick={(e) => handleNavClick(e, "#how")}
+              className="py-1 text-left hover:text-yellow-400"
             >
               How it works
-            </a>
-            <a
-              href="#services"
-              className="py-1 hover:text-yellow-400"
+            </button>
+            <button
               onClick={(e) => handleNavClick(e, "#services")}
+              className="py-1 text-left hover:text-yellow-400"
             >
               Services
-            </a>
-            <a
-              href="#owners"
-              className="py-1 hover:text-yellow-400"
+            </button>
+            <button
               onClick={(e) => handleNavClick(e, "#owners")}
+              className="py-1 text-left hover:text-yellow-400"
             >
               For truck owners
-            </a>
-            <a
-              href="#download"
-              className="py-1 hover:text-yellow-400"
+            </button>
+            <button
+              onClick={onPartnerClick}
+              className="py-1 text-left hover:text-yellow-400"
+            >
+              Become a partner
+            </button>
+            <button
               onClick={(e) => handleNavClick(e, "#download")}
+              className="py-1 text-left hover:text-yellow-400"
             >
               Download app
-            </a>
+            </button>
           </div>
         </div>
       )}

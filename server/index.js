@@ -1,44 +1,45 @@
-// backend/index.js
+// server/index.js
 require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
+
+const driversRoutes = require("./routes/drivers");
+const bookingsRoutes = require("./routes/bookings");
 
 const app = express();
 
-// MIDDLEWARE
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173" }));
+const PORT = process.env.PORT || 4000;
+const MONGO_URI = process.env.MONGO_URI;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
+
+console.log("MONGO_URI:", MONGO_URI);
+
+app.use(
+  cors({
+    origin: CORS_ORIGIN,
+  })
+);
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// IMPORT ROUTES
-const ownersRoutes = require("./routes/owners");
-const bookingsRoutes = require("./routes/bookings");
-
-// HEALTH CHECK
 app.get("/", (req, res) => {
-  res.send("Shifty API is running with MongoDB");
+  res.send("Shifty API is running");
 });
 
-// MOUNT ROUTES
-app.use("/api/owners", ownersRoutes);
+app.use("/api/drivers", driversRoutes);
 app.use("/api/bookings", bookingsRoutes);
-
-// CONNECT TO MONGODB AND START SERVER
-const MONGO_URI = process.env.MONGO_URI;
-const PORT = process.env.PORT || 4000;
-
-console.log("Connecting to MongoDB...");
-console.log("MONGO_URI:", MONGO_URI);
 
 mongoose
   .connect(MONGO_URI)
   .then(() => {
-    console.log("✅ Connected to MongoDB");
-    app.listen(PORT, () => {
-      console.log(`✅ API running on port ${PORT}`);
-    });
+    console.log("Connected to MongoDB");
+    app.listen(PORT, () =>
+      console.log(`API running on http://localhost:${PORT}`)
+    );
   })
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
+    console.error("MongoDB connection error:", err.message);
   });
