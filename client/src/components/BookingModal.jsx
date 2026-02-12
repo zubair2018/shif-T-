@@ -4,9 +4,7 @@ import { useState } from "react";
 const initialForm = {
   customerName: "",
   customerPhone: "",
-  pickupCity: "",
   pickupAddress: "",
-  dropCity: "",
   dropAddress: "",
   loadType: "mini",
   weightTons: "",
@@ -23,7 +21,7 @@ const BookingModal = ({ onClose }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setStatus("");
 
@@ -44,7 +42,7 @@ const BookingModal = ({ onClose }) => {
 
       const data = await res.json();
       setStatus(
-        `Booking created. We matched ${data.driverCount || 0} drivers in your area.`
+        `Booking created. We matched ${data.driverCount || 0} drivers for your load.`
       );
       setForm(initialForm);
     } catch (err) {
@@ -102,30 +100,9 @@ const BookingModal = ({ onClose }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] mb-1">Pickup city</label>
-                <input
-                  name="pickupCity"
-                  value={form.pickupCity}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] mb-1">Drop city</label>
-                <input
-                  name="dropCity"
-                  value={form.dropCity}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] mb-1">Pickup address</label>
+                <label className="block text-[11px] mb-1">
+                  Pickup address (with city)
+                </label>
                 <input
                   name="pickupAddress"
                   value={form.pickupAddress}
@@ -135,7 +112,9 @@ const BookingModal = ({ onClose }) => {
                 />
               </div>
               <div>
-                <label className="block text-[11px] mb-1">Drop address</label>
+                <label className="block text-[11px] mb-1">
+                  Drop address (with city)
+                </label>
                 <input
                   name="dropAddress"
                   value={form.dropAddress}

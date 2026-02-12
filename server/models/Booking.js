@@ -6,9 +6,7 @@ const bookingSchema = new mongoose.Schema(
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
 
-    pickupCity: { type: String, required: true },
     pickupAddress: { type: String, required: true },
-    dropCity: { type: String, required: true },
     dropAddress: { type: String, required: true },
 
     loadType: {

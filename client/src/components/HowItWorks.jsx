@@ -1,42 +1,61 @@
 // src/components/HowItWorks.jsx
 const steps = [
   {
-    title: "Enter pickup & drop",
-    desc: "Add locations, date, and type of goods. See instant estimates based on distance and truck size.",
+    title: "Tell us what you’re moving",
+    desc: "You fill a 1‑minute form with pickup, drop, and whether it’s house goods, mandi load, or factory material.",
+    badge: "Step 1",
   },
   {
-    title: "Choose truck & time",
-    desc: "Pick from available trucks and slots. Your driver details and vehicle number are shared instantly.",
+    title: "We ping the right trucks",
+    desc: "Shifty checks mini, medium, or heavy trucks that are online near your pickup city and matches the best owner.",
+    badge: "Step 2",
   },
   {
-    title: "Track and pay",
-    desc: "Track your move live and pay after loading or on delivery via UPI, cash, or bank transfer.",
+    title: "You confirm and roll",
+    desc: "You get the truck details and price. Once you confirm, the owner heads to your pickup and the trip starts.",
+    badge: "Step 3",
   },
 ];
 
 const HowItWorks = () => {
   return (
-    <section id="how" className="bg-slate-950">
-      <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-          How it works
-        </h2>
-        <p className="mt-2 text-sm text-slate-300 max-w-md">
-          A simple three-step flow from booking to delivery designed for heavy
-          goods and full-truck-load moves.
-        </p>
+    <section
+      id="how"
+      className="bg-slate-950 border-t border-slate-900/60 py-10 md:py-14"
+    >
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-yellow-300 mb-1">
+              How Shifty works
+            </p>
+            <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
+              From “I need a truck” to “truck is on the way”
+            </h2>
+            <p className="mt-1 text-xs md:text-sm text-slate-400 max-w-xl">
+              No app maze, no broker hunting. A simple flow that works the same
+              way for mini trucks and 32 ft containers.
+            </p>
+          </div>
+        </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {steps.map((step, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {steps.map((step) => (
             <div
               key={step.title}
-              className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+              className="rounded-2xl bg-slate-900/70 border border-slate-800 p-4 flex flex-col"
             >
-              <div className="absolute -top-3 left-4 h-7 w-7 rounded-full bg-yellow-400 text-slate-950 text-xs font-bold flex items-center justify-center">
-                {index + 1}
+              <div className="flex items-center justify-between mb-2">
+                <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">
+                  {step.badge}
+                </span>
               </div>
-              <h3 className="mt-3 text-base font-semibold">{step.title}</h3>
-              <p className="mt-2 text-xs text-slate-300">{step.desc}</p>
+              <h3 className="text-sm md:text-base font-semibold text-slate-50 mb-1.5">
+                {step.title}
+              </h3>
+              <p className="text-xs md:text-sm text-slate-400">
+                {step.desc}
+              </p>
             </div>
           ))}
         </div>

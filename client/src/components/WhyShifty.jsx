@@ -1,35 +1,16 @@
 // src/components/WhyShifty.jsx
-
 const reasons = [
   {
-    title: "All truck sizes, one tap",
-    description:
-      "From Ace and pickups to 12‑tyre trailers, Shifty lets you request the exact truck size you need without calling 10 different drivers.",
+    title: "Verified local owners",
+    desc: "We onboard local truck owners, verify them once, and you keep getting reliable vehicles when you need them.",
   },
   {
-    title: "Built for Kashmir routes",
-    description:
-      "We work with local owners who understand valley roads, snow, traffic and season timing – especially during apple and mandi seasons.",
+    title: "No app learning curve",
+    desc: "Most customers still prefer WhatsApp and calls. Shifty works with simple forms and human support behind the scenes.",
   },
   {
-    title: "Interstate ready",
-    description:
-      "Plan full‑truck loads from Kashmir to other states with the same app. Ideal for factories, warehouses and large buyers.",
-  },
-  {
-    title: "Verified owners & drivers",
-    description:
-      "Basic KYC, vehicle documents and route history checked so you are not dealing with unknown numbers from classifieds.",
-  },
-  {
-    title: "Real human support",
-    description:
-      "A small operations team watches every booking, helps with timings, and resolves issues – not just automated messages.",
-  },
-  {
-    title: "Simple, transparent pricing",
-    description:
-      "Clear estimates before you confirm. No surprise detour charges or last‑minute rate changes after loading.",
+    title: "Designed for Indian routes",
+    desc: "From Kashmir apple trips to local mandi runs, the product is shaped around real Indian freight patterns.",
   },
 ];
 
@@ -37,24 +18,33 @@ const WhyShifty = () => {
   return (
     <section
       id="why"
-      className="bg-slate-950 text-slate-100 py-12 border-t border-slate-800"
+      className="bg-slate-950 border-t border-slate-900/60 py-10 md:py-14"
     >
       <div className="mx-auto max-w-6xl px-4">
-        <h2 className="text-xl font-semibold mb-2">Why Shifty</h2>
-        <p className="text-sm text-slate-400 mb-6 max-w-2xl">
-          A truck platform designed around Kashmir’s reality – local mini
-          trucks, long‑haul routes, and real support when things get tricky.
-        </p>
+        <div className="mb-6 md:mb-8">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-yellow-300 mb-1">
+            Why Shifty
+          </p>
+          <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
+            Built for real‑world logistics, not just apps
+          </h2>
+          <p className="mt-1 text-xs md:text-sm text-slate-400 max-w-xl">
+            Shifty is a bridge between traditional truck owners and modern
+            customers who want reliability without complicated tools.
+          </p>
+        </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          {reasons.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-2xl bg-slate-900 border border-slate-700 p-4"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {reasons.map((r) => (
+            <div
+              key={r.title}
+              className="rounded-2xl bg-slate-900/70 border border-slate-800 p-4"
             >
-              <h3 className="text-sm font-semibold mb-2">{item.title}</h3>
-              <p className="text-xs text-slate-300">{item.description}</p>
-            </article>
+              <h3 className="text-sm md:text-base font-semibold text-slate-50 mb-1.5">
+                {r.title}
+              </h3>
+              <p className="text-xs md:text-sm text-slate-400">{r.desc}</p>
+            </div>
           ))}
         </div>
       </div>

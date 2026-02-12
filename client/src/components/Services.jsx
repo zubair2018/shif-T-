@@ -1,25 +1,28 @@
 // src/components/Services.jsx
 const services = [
   {
-    title: "Local mini trucks",
-    tag: "WITHIN CITY & NEARBY",
-    description:
-      "Perfect for house shifts, shop deliveries and short‑distance goods. Quick pickup with Ace and other mini trucks in your area.",
-    img: "/Untitled-design.jpg",
+    tag: "City moves",
+    title: "Mini trucks & pickups",
+    points: [
+      "House shifting, furniture, small business deliveries",
+      "Tata Ace, Bolero pickup, small cargo vehicles",
+    ],
   },
   {
-    title: "City & regional loads",
-    tag: "FACTORIES • WAREHOUSES",
-    description:
-      "3–7 ton vehicles for factory‑to‑warehouse, mandi‑to‑shop and B2B loads across districts. Scheduled trips with trusted local fleets.",
-    img: "/Untitled-design2.jpg",
+    tag: "Regional & state",
+    title: "Medium trucks (14–19 ft)",
+    points: [
+      "Mandi loads, warehouse to warehouse runs",
+      "Good for 3–8 tons depending on body type",
+    ],
   },
   {
-    title: "Long‑haul & interstate",
-    tag: "HEAVY & 12‑TYRE TRUCKS",
-    description:
-      "Full‑body and container trucks for heavy loads and seasonal transport like apples from Kashmir to other states, with live support.",
-    img: "/Untitled-design3.jpg",
+    tag: "Long haul",
+    title: "Heavy & container trucks",
+    points: [
+      "Factory dispatch, cold chain, apple and fruit movements",
+      "Interstate containers and full body trucks",
+    ],
   },
 ];
 
@@ -27,45 +30,46 @@ const Services = () => {
   return (
     <section
       id="services"
-      className="bg-slate-950 text-slate-100 py-12 border-t border-slate-800"
+      className="bg-slate-950 border-t border-slate-900/60 py-10 md:py-14"
     >
       <div className="mx-auto max-w-6xl px-4">
-        <h2 className="text-xl font-semibold mb-2">Services we cover</h2>
-        <p className="text-sm text-slate-400 mb-6 max-w-2xl">
-          From short city hops to long‑distance factory loads, Shifty connects
-          you to the right truck and driver for every kind of **movement**.
-        </p>
+        <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-yellow-300 mb-1">
+              Services
+            </p>
+            <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
+              From mini pickups to full‑body trucks
+            </h2>
+            <p className="mt-1 text-xs md:text-sm text-slate-400 max-w-xl">
+              You don&apos;t have to know truck jargon. You just tell us where
+              from, where to, and what you&apos;re moving — we pick the right
+              vehicle.
+            </p>
+          </div>
+        </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          {services.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-2xl bg-slate-900 border border-slate-700 overflow-hidden flex flex-col"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          {services.map((s) => (
+            <div
+              key={s.title}
+              className="rounded-2xl bg-slate-900/70 border border-slate-800 p-4 flex flex-col"
             >
-              <div className="h-28 w-full bg-slate-800">
-                <img
-                  src={item.img}
-                  alt={item.title}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="p-4 flex-1 flex flex-col justify-between">
-                <div>
-                  <span className="inline-block text-[10px] uppercase tracking-wide text-yellow-300 mb-2">
-                    {item.tag}
-                  </span>
-                  <h3 className="text-sm font-semibold mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-slate-300">
-                    {item.description}
-                  </p>
-                </div>
-                <button className="mt-4 inline-flex text-[11px] font-semibold text-yellow-300 hover:text-yellow-200">
-                  Get estimate
-                </button>
-              </div>
-            </article>
+              <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300 mb-2">
+                {s.tag}
+              </span>
+              <h3 className="text-sm md:text-base font-semibold text-slate-50 mb-2">
+                {s.title}
+              </h3>
+              <ul className="space-y-1.5 text-xs md:text-sm text-slate-400">
+                {s.points.map((p) => (
+                  <li key={p} className="flex gap-1.5">
+                    <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </div>
       </div>

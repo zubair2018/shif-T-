@@ -3,90 +3,66 @@ const Hero = ({ onBookClick }) => {
   return (
     <section
       id="top"
-      className="bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 pt-20 pb-12 md:pt-24 md:pb-16"
+      className="relative pt-10 pb-10 md:pt-12 md:pb-14"
     >
-      <div className="mx-auto max-w-6xl px-4 flex flex-col md:flex-row items-center gap-8">
-        {/* Left text block */}
-        <div className="flex-1">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-yellow-300 mb-2">
-            Same day trucks · Pan‑city
-          </p>
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage:
+            "url('https://images.pexels.com/photos/5205123/pexels-photo-5205123.jpeg')",
+        }}
+      />
+      {/* Dark gradient overlay similar to old background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-950/90 to-slate-900/95" />
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-3">
-            Book any truck,{" "}
-            <span className="text-yellow-400">
-              from mini to full‑body.
+      {/* Content */}
+      <div className="relative mx-auto max-w-6xl px-4 flex flex-col md:flex-row items-center gap-8">
+        {/* Left: main copy (unchanged text and styles) */}
+        <div className="flex-1">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/80 px-2.5 py-1 mb-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="text-[11px] text-slate-300">
+              *Shifty · book trusted trucks
+            </span>
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-3">
+            Mini to factory‑level trucks,{" "}
+            <span className="block text-yellow-400">
+              booked in seconds.
             </span>
           </h1>
 
           <p className="text-slate-300 text-sm md:text-base max-w-xl mb-5">
-            One place to move anything: mini trucks for city drops, medium
-            trucks for mandis and warehouses, and heavy trucks for factory
-            loads and long highway routes.
+            From small city moves to full‑body highway loads, Shifty connects
+            you to verified local truck owners without broker drama.
           </p>
 
-          {/* CTA buttons */}
+          {/* CTAs */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <button
               onClick={onBookClick}
-              className="px-6 py-2.5 rounded-full bg-yellow-400 text-slate-950 font-semibold text-sm hover:bg-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.5)]"
+              className="px-6 py-2.5 rounded-full bg-yellow-400 text-slate-950 font-semibold text-sm hover:bg-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.55)]"
             >
               Book a truck
             </button>
             <a
-              href="#services"
+              href="#how"
               className="px-6 py-2.5 rounded-full border border-slate-600 text-slate-200 text-sm hover:border-yellow-300 hover:text-yellow-300 transition-colors"
             >
-              Explore services
+              See how it works
             </a>
           </div>
 
           <p className="text-[11px] text-slate-400">
-            No call‑center drama: you share basic details, we match you to the
-            right truck and local **owner** in minutes.
+            Share pickup, drop, and what you&apos;re moving — we match the right
+            truck and owner, then you confirm.
           </p>
         </div>
 
-        {/* Right visual block */}
-        <div className="flex-1 w-full md:w-auto">
-          <div className="relative mx-auto max-w-sm rounded-3xl bg-slate-900 border border-slate-700/80 p-4 shadow-[0_0_40px_rgba(15,23,42,0.9)]">
-            <div className="absolute -top-3 -right-3 px-2 py-1 rounded-full bg-emerald-500 text-[10px] font-semibold text-slate-950 shadow">
-              Live in Anantnag
-            </div>
-
-            <div className="mb-3">
-              <p className="text-[11px] text-slate-400 mb-1">
-                Sample booking
-              </p>
-              <p className="text-sm font-medium text-slate-100">
-                Sopore → Delhi · 8 tons apples
-              </p>
-            </div>
-
-            <div className="space-y-2 text-xs text-slate-300">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Pickup</span>
-                <span className="font-medium">Sopore mandi</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Drop</span>
-                <span className="font-medium">Okhla, Delhi</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Truck</span>
-                <span className="font-medium">32 ft container</span>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Verified Shifty partner</span>
-              <span className="inline-flex items-center gap-1 text-emerald-400">
-                ●
-                <span>Online drivers nearby</span>
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Right side now empty / spacer so layout stays similar */}
+        <div className="flex-1 w-full md:w-auto" />
       </div>
     </section>
   );
