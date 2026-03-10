@@ -13,6 +13,8 @@ import ContactSection from "./components/ContactSection";
 import Footer from "./components/Footer";
 import BookingModal from "./components/BookingModal";
 import PartnerModal from "./components/PartnerModal";
+import BookingsTest from "./components/BookingsTest";
+
 import AdminPage from "./AdminPage";
 import DriverPage from "./DriverPage";
 
@@ -53,6 +55,7 @@ function App() {
           <AppDownload />
           <AboutSection />
           <ContactSection />
+          { <BookingsTest />}
           <Footer />
         </main>
 
