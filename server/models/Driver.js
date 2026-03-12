@@ -1,12 +1,14 @@
-// server/models/Driver.js
-import { db, nextDriverId } from "../memoryStore.js";
+import { firestore } from "../firebaseAdmin.js";
 
-export function createDriver(data) {
-  const id = nextDriverId();
+const DRIVERS_COLLECTION = "drivers";
+
+function normalizeDriver(doc) {
+  return { id: doc.id, ...doc.data() };
+}
+
+export async function createDriver(data) {
   const now = new Date().toISOString();
-
-  const driver = {
-    id,
+  const payload = {
     name: data.name,
     phone: data.phone,
     city: data.city,
@@ -14,35 +16,49 @@ export function createDriver(data) {
     fleetSize: data.fleetSize || "",
     drivingLicenseNo: data.drivingLicenseNo || "",
     aadharNumber: data.aadharNumber || "",
-    licenseDocUrl: data.licenseDocUrl || "",
-    aadharDocUrl: data.aadharDocUrl || "",
-    status: "pending",   // pending | verified | rejected
+    status: "pending",
     notes: "",
     createdAt: now,
     updatedAt: now
   };
 
-  db.drivers.push(driver);
-  return driver;
+  const docRef = await firestore.collection(DRIVERS_COLLECTION).add(payload);
+  return { id: docRef.id, ...payload };
 }
 
-export function listDrivers() {
-  return db.drivers;
+export async function listDrivers() {
+  const snapshot = await firestore.collection(DRIVERS_COLLECTION).get();
+  return snapshot.docs.map(normalizeDriver);
 }
 
-export function listPendingDrivers() {
-  return db.drivers.filter((d) => d.status === "pending");
+export async function listPendingDrivers() {
+  const snapshot = await firestore
+    .collection(DRIVERS_COLLECTION)
+    .where("status", "==", "pending")
+    .get();
+
+  return snapshot.docs.map(normalizeDriver);
 }
 
-export function getDriverById(id) {
-  return db.drivers.find((d) => d.id === id) || null;
+export async function getDriverById(id) {
+  const snap = await firestore.collection(DRIVERS_COLLECTION).doc(id).get();
+  if (!snap.exists) return null;
+  return normalizeDriver(snap);
 }
 
-export function setDriverStatus(id, status, notes = "") {
-  const driver = getDriverById(id);
-  if (!driver) return null;
-  driver.status = status;
-  if (notes) driver.notes = notes;
-  driver.updatedAt = new Date().toISOString();
-  return driver;
+export async function setDriverStatus(id, status, notes = "") {
+  const ref = firestore.collection(DRIVERS_COLLECTION).doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) return null;
+
+  const payload = {
+    status,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (notes) payload.notes = notes;
+
+  await ref.update(payload);
+  const updated = await ref.get();
+  return normalizeDriver(updated);
 }

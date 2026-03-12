@@ -1,6 +1,8 @@
 # Shifty Server
 
-Local development instructions
+Backend API for bookings, drivers and partners.
+
+## Local development
 
 1. Install dependencies:
 
@@ -9,32 +11,33 @@ cd server
 npm install
 ```
 
-2. Create `.env` (copy `.env.example`) and set:
-- `MONGODB_URI` (optional for full functionality; if not set the server uses in-memory fallback)
-- `JWT_SECRET` (set a strong secret)
-- `CORS_ORIGIN` (frontend origin, e.g. `http://localhost:5173`)
-- `ADMIN_EMAIL` and `ADMIN_PASSWORD` to seed an admin user (optional)
+2. Configure Firebase Admin credentials:
 
-3. Start server in dev mode:
+- Add `serviceAccountKey.json` in `server/` (or replace existing one with valid credentials).
+- Ensure the service account has Firestore access.
+
+3. Start the server:
 
 ```bash
 npm run dev
 ```
 
-4. To seed an admin user (if MongoDB is configured):
+4. Verify health:
 
 ```bash
-# with env
-ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret npm start
-# or set vars in .env and restart
+curl http://localhost:4000/health
 ```
 
-5. Run tests:
+## API routes
 
-```bash
-npm test
-```
-
-Notes:
-- When `MONGODB_URI` is provided the server uses MongoDB via Mongoose.
-- If `MONGODB_URI` is not set, the server falls back to a short-lived in-memory store for bookings (useful for quick local testing).
+- `GET /api/bookings`
+- `POST /api/bookings`
+- `PATCH /api/bookings/:id/status`
+- `POST /api/bookings/:id/accept`
+- `POST /api/bookings/:id/reject`
+- `POST /api/drivers/register`
+- `GET /api/drivers`
+- `POST /api/drivers/:id/verify`
+- `POST /api/drivers/:id/reject`
+- `POST /api/partners/register`
+- `GET /api/partners`

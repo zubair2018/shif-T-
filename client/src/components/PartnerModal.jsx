@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "../api";
 
 const PartnerModal = ({ onClose }) => {
   const [form, setForm] = useState({
@@ -8,7 +9,7 @@ const PartnerModal = ({ onClose }) => {
     truckTypes: "",
     fleetSize: "",
     drivingLicenseNo: "",
-    aadharNumber: "",
+    aadharNumber: ""
   });
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -30,19 +31,17 @@ const PartnerModal = ({ onClose }) => {
     try {
       setStatus("loading");
 
-      const res = await fetch("/api/partners", {
+      const res = await fetch(`${API_BASE}/api/partners/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(form)
       });
 
-      if (!res.ok) {
-        throw new Error("Failed");
-      }
+      if (!res.ok) throw new Error("Failed");
 
       setStatus("success");
       setTimeout(() => onClose(), 1200);
-    } catch (err) {
+    } catch (_err) {
       setStatus("error");
       setError("Could not submit details. Please try again.");
     }
@@ -52,80 +51,23 @@ const PartnerModal = ({ onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur">
       <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-100">
-            Partner with Shifty
-          </h2>
-          <button onClick={onClose} className="text-slate-400 text-sm">
-            ✕
-          </button>
+          <h2 className="text-sm font-semibold text-slate-100">Partner with Shifty</h2>
+          <button onClick={onClose} className="text-slate-400 text-sm">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 text-[12px]">
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Your name"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
-          <input
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder="Phone number"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
-          <input
-            name="city"
-            value={form.city}
-            onChange={handleChange}
-            placeholder="City / base location"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
-          <input
-            name="truckTypes"
-            value={form.truckTypes}
-            onChange={handleChange}
-            placeholder="Truck types (e.g. 407, 1109, 32ft)"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
-          <input
-            name="fleetSize"
-            value={form.fleetSize}
-            onChange={handleChange}
-            placeholder="Approx. number of trucks"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
+          <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
+          <input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone number" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
+          <input name="city" value={form.city} onChange={handleChange} placeholder="City / base location" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
+          <input name="truckTypes" value={form.truckTypes} onChange={handleChange} placeholder="Truck types (e.g. 407, 1109, 32ft)" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
+          <input name="fleetSize" value={form.fleetSize} onChange={handleChange} placeholder="Approx. number of trucks" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
+          <input name="drivingLicenseNo" value={form.drivingLicenseNo} onChange={handleChange} placeholder="Driving license number" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
+          <input name="aadharNumber" value={form.aadharNumber} onChange={handleChange} placeholder="Aadhar number" className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]" />
 
-          <input
-            name="drivingLicenseNo"
-            value={form.drivingLicenseNo}
-            onChange={handleChange}
-            placeholder="Driving license number"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
-          <input
-            name="aadharNumber"
-            value={form.aadharNumber}
-            onChange={handleChange}
-            placeholder="Aadhar number"
-            className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px]"
-          />
+          {error && <p className="text-[11px] text-red-400">{error}</p>}
+          {status === "success" && <p className="text-[11px] text-emerald-400">Thanks! Our team will reach out to you soon.</p>}
 
-          {error && (
-            <p className="text-[11px] text-red-400">{error}</p>
-          )}
-          {status === "success" && (
-            <p className="text-[11px] text-emerald-400">
-              Thanks! Our team will reach out to you soon.
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={status === "loading"}
-            className="w-full rounded-full bg-yellow-400 py-2 text-[12px] font-semibold text-slate-950 hover:bg-yellow-300 disabled:opacity-70"
-          >
+          <button type="submit" disabled={status === "loading"} className="w-full rounded-full bg-yellow-400 py-2 text-[12px] font-semibold text-slate-950 hover:bg-yellow-300 disabled:opacity-70">
             {status === "loading" ? "Submitting..." : "Submit details"}
           </button>
         </form>

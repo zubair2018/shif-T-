@@ -1,39 +1,37 @@
-// server/routes/partners.js
 import { Router } from "express";
-import { db, nextPartnerId } from "../memoryStore.js";
-import { requireAdmin } from "../middleware/auth.js";
+import { createPartner, listPartners } from "../models/Partner.js";
 
 const router = Router();
 
-// Partner registration
-router.post("/register", (req, res) => {
-  const { name, phone, city, companyName } = req.body;
+router.post("/register", async (req, res) => {
+  try {
+    const { name, phone, city, companyName, truckTypes, fleetSize, drivingLicenseNo, aadharNumber } = req.body;
 
-  if (!name || !phone || !city) {
-    return res
-      .status(400)
-      .json({ error: "Name, phone and city are required." });
+    if (!name || !phone || !city) {
+      return res.status(400).json({ error: "Name, phone and city are required." });
+    }
+
+    const partner = await createPartner({
+      name,
+      phone,
+      city,
+      companyName,
+      truckTypes,
+      fleetSize,
+      drivingLicenseNo,
+      aadharNumber
+    });
+
+    res.status(201).json({ ok: true, partner });
+  } catch (err) {
+    console.error("Error creating partner:", err);
+    res.status(500).json({ error: "Failed to create partner" });
   }
-
-  const id = String(nextPartnerId());
-  const now = new Date().toISOString();
-
-  const partner = {
-    id,
-    name,
-    phone,
-    city,
-    companyName: companyName || "",
-    createdAt: now
-  };
-
-  db.partners.push(partner);
-  res.status(201).json({ ok: true, partner });
 });
 
-// Admin: all partners
-router.get("/", requireAdmin, (_req, res) => {
-  res.json({ ok: true, partners: db.partners });
+router.get("/", async (_req, res) => {
+  const partners = await listPartners();
+  res.json({ ok: true, partners });
 });
 
 export default router;
