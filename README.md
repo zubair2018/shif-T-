@@ -1,50 +1,107 @@
-# Shifty (Monorepo)
+# ShifT - Logistics & Transport Management Platform
 
-This repository contains two main parts:
+A modern, full-stack logistics platform that connects customers, drivers, and admins for seamless freight and transport operations.
 
-- `server/` — Express backend (has fallback in-memory store for quick local testing)
-- `client/` — React frontend (Vite)
+## 📋 Table of Contents
 
-## Quick start (local development)
-
-1. Install dependencies (from repo root):
-
-```bash
-# server
-cd server
-npm install
-
-# client
-cd ../client
-npm install
-```
-
-2. Start the backend (dev mode with nodemon):
-
-```bash
-cd server
-npm run dev
-```
-
-3. Start the frontend (Vite dev server):
-
-```bash
-cd client
-npm run dev
-```
-
-4. Run tests:
-
-```bash
-# server
-cd server
-npm test
-```
-
-Notes:
-- Set `MONGODB_URI` in `server/.env` to enable persistent storage via MongoDB; otherwise the server uses an in-memory store.
-- Frontend runs at `http://localhost:5173` and expects the API at `http://localhost:4000` by default.
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Installation](#installation)
+- [Running the Application](#running-the-application)
+- [API Endpoints](#api-endpoints)
+- [Usage Guide](#usage-guide)
+- [File Structure](#file-structure)
+- [Future Enhancements](#future-enhancements)
 
 ---
 
-If you want, I can add convenience npm scripts to run both servers together (using `concurrently`) or add a Docker Compose file for easy local orchestration.
+## ✨ Features
+
+### For Customers
+- **Easy Booking**: Quick booking form for transport services
+- **Real-time Tracking**: Monitor booking status in real-time
+- **Multiple Vehicle Types**: Choose from mini trucks, standard trucks, etc.
+- **Pickup & Drop Location**: Specify exact pickup and drop locations
+- **Scheduling**: Book trips at preferred times
+
+### For Drivers
+- **Driver Dashboard**: Personalized dashboard showing assigned loads
+- **Load Management**: View, accept, or reject assigned bookings
+- **Trip Details**: See customer info, pickup/drop locations, and schedules
+- **Status Updates**: Update trip status in real-time
+
+### For Admins
+- **Comprehensive Dashboard**: Overview of all bookings and drivers
+- **Booking Management**: View, filter, and manage all bookings
+- **Driver Management**: Approve, activate, or deactivate drivers
+- **Driver Assignment**: Assign drivers to bookings with one click
+- **Analytics**: Track revenue, active trips, top cities, driver utilization
+- **Real-time Updates**: Refresh data and see live changes
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 18** - UI library
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling
+- **React Router DOM** - Client-side routing
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Server framework
+- **Firebase Admin SDK** - Database & authentication
+
+### Database
+- **Google Firestore** - NoSQL cloud database
+- **Firebase Authentication** - User authentication
+
+### Deployment
+- **Vercel/Netlify** - Frontend (recommended)
+- **Render/Railway** - Backend (recommended)
+
+---
+
+## 📁 Project Structure
+
+shif-T-/
+├── client/ # Frontend React app
+│ ├── src/
+│ │ ├── components/ # Reusable components
+│ │ │ ├── AppHeader.jsx
+│ │ │ ├── BottomNav.jsx
+│ │ │ ├── BookingModal.jsx # Customer booking form
+│ │ │ ├── PartnerModal.jsx # Driver signup form
+│ │ │ ├── Hero.jsx
+│ │ │ ├── HowItWorks.jsx
+│ │ │ ├── Services.jsx
+│ │ │ ├── Plans.jsx
+│ │ │ └── ...other components
+│ │ ├── App.jsx # Main router
+│ │ ├── AdminPage.jsx # Admin dashboard
+│ │ ├── DriverPage.jsx # Driver dashboard
+│ │ ├── main.jsx # Entry point
+│ │ └── index.css
+│ ├── package.json
+│ └── vite.config.js
+│
+├── server/ # Backend Node/Express app
+│ ├── index.js # Main server file with all routes
+│ ├── serviceAccountKey.json # Firebase credentials (gitignored)
+│ ├── package.json
+│ └── .gitignore
+│
+├── README.md # This file
+└── .gitignore
+
+
+
+
+### Prerequisites
+
+1. **Node.js** (v16+) and **npm**
+2. **Firebase Project** - Create one at [Firebase Console](https://console.firebase.google.com)
+3. **Git** - For version control
