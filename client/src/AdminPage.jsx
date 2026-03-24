@@ -30,7 +30,6 @@ const statusBadgeClasses = {
 
 const bookingFilters = ["All", "Today", "Upcoming", "Completed", "Cancelled"];
 
-// helper to check if a booking is today/upcoming
 const isToday = (iso) => {
   if (!iso) return false;
   const d = new Date(iso);
@@ -56,6 +55,9 @@ export default function AdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [bookingFilter, setBookingFilter] = useState("All");
+
+  // NEW: which section is active in left nav
+  const [activeSection, setActiveSection] = useState("dashboard"); // "dashboard" | "bookings" | "drivers" | "analytics" | "settings"
 
   useEffect(() => {
     let mounted = true;
@@ -100,7 +102,6 @@ export default function AdminPage() {
     }
   };
 
-  // Derived analytics
   const analytics = useMemo(() => {
     const totalBookings = bookings.length;
     const completedBookings = bookings.filter(
@@ -116,10 +117,8 @@ export default function AdminPage() {
     const activeDrivers = drivers.filter((d) => d.status === "active").length;
     const pendingDrivers = drivers.filter((d) => d.status === "pending").length;
 
-    // Simple revenue estimate: 1000 per completed booking
     const revenueEstimate = completedBookings * 1000;
 
-    // City counts from pickupLocation if present
     const cityMap = {};
     for (const b of bookings) {
       const pickup = b.pickupLocation || b.pickup || "";
@@ -143,7 +142,6 @@ export default function AdminPage() {
     };
   }, [bookings, drivers]);
 
-  // Booking filtering
   const filteredBookings = useMemo(() => {
     if (bookingFilter === "All") return bookings;
     if (bookingFilter === "Today") {
@@ -161,7 +159,6 @@ export default function AdminPage() {
     return bookings;
   }, [bookings, bookingFilter]);
 
-  // Local-only actions (wire to backend later)
   const updateBookingStatus = (id, status) => {
     setBookings((prev) =>
       prev.map((b) => (b.id === id || b._id === id ? { ...b, status } : b))
@@ -190,29 +187,68 @@ export default function AdminPage() {
       <aside className="hidden md:flex md:flex-col w-64 bg-slate-900/80 border-r border-slate-800">
         <div className="px-6 py-5 border-b border-slate-800">
           <div className="text-lg font-semibold tracking-tight">
-            Shify<span className="text-emerald-400"></span> Admin
+            Shify <span className="text-emerald-400">Admin</span>
           </div>
           <div className="mt-1 text-xs text-slate-400">
             Operations control center
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
-          <div className="px-3 py-2 rounded-lg bg-slate-800/80 text-emerald-300 font-medium flex items-center justify-between">
+          <button
+            onClick={() => setActiveSection("dashboard")}
+            className={`w-full text-left px-3 py-2 rounded-lg font-medium flex items-center justify-between ${
+              activeSection === "dashboard"
+                ? "bg-slate-800/80 text-emerald-300"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
             <span>Dashboard</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40">
               LIVE
             </span>
-          </div>
-          <button className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800/80">
+          </button>
+
+          <button
+            onClick={() => setActiveSection("bookings")}
+            className={`w-full text-left px-3 py-2 rounded-lg ${
+              activeSection === "bookings"
+                ? "bg-slate-800/80 text-emerald-300"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
             Bookings
           </button>
-          <button className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800/80">
+
+          <button
+            onClick={() => setActiveSection("drivers")}
+            className={`w-full text-left px-3 py-2 rounded-lg ${
+              activeSection === "drivers"
+                ? "bg-slate-800/80 text-emerald-300"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
             Drivers
           </button>
-          <button className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800/80">
+
+          <button
+            onClick={() => setActiveSection("analytics")}
+            className={`w-full text-left px-3 py-2 rounded-lg ${
+              activeSection === "analytics"
+                ? "bg-slate-800/80 text-emerald-300"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
             Analytics
           </button>
-          <button className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800/80">
+
+          <button
+            onClick={() => setActiveSection("settings")}
+            className={`w-full text-left px-3 py-2 rounded-lg ${
+              activeSection === "settings"
+                ? "bg-slate-800/80 text-emerald-300"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
             Settings
           </button>
         </nav>
@@ -221,13 +257,17 @@ export default function AdminPage() {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main area */}
       <div className="flex-1 flex flex-col">
         {/* Top bar */}
         <header className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
           <div>
             <h1 className="text-lg md:text-xl font-semibold">
-              Admin Dashboard
+              {activeSection === "dashboard" && "Admin Dashboard"}
+              {activeSection === "bookings" && "Bookings"}
+              {activeSection === "drivers" && "Drivers"}
+              {activeSection === "analytics" && "Analytics"}
+              {activeSection === "settings" && "Settings"}
             </h1>
             <p className="text-xs md:text-sm text-slate-400">
               Live overview of bookings and drivers
@@ -258,79 +298,81 @@ export default function AdminPage() {
             <div className="text-sm text-slate-400">Loading dashboard…</div>
           ) : (
             <>
-              {/* KPI cards */}
-              <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <KpiCard
-                  label="Total bookings"
-                  value={analytics.totalBookings}
-                  sub={`${analytics.completedBookings} completed / ${analytics.cancelledBookings} cancelled`}
-                />
-                <KpiCard
-                  label="Revenue estimate"
-                  value={`₹${analytics.revenueEstimate.toLocaleString()}`}
-                  sub="Based on completed trips"
-                />
-                <KpiCard
-                  label="Active drivers"
-                  value={analytics.activeDrivers}
-                  sub={`${analytics.pendingDrivers} pending approval`}
-                />
-                <KpiCard
-                  label="Active trips"
-                  value={analytics.activeBookings}
-                  sub="Now in progress"
-                />
-              </section>
+              {/* DASHBOARD VIEW */}
+              {activeSection === "dashboard" && (
+                <>
+                  <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <KpiCard
+                      label="Total bookings"
+                      value={analytics.totalBookings}
+                      sub={`${analytics.completedBookings} completed / ${analytics.cancelledBookings} cancelled`}
+                    />
+                    <KpiCard
+                      label="Revenue estimate"
+                      value={`₹${analytics.revenueEstimate.toLocaleString()}`}
+                      sub="Based on completed trips"
+                    />
+                    <KpiCard
+                      label="Active drivers"
+                      value={analytics.activeDrivers}
+                      sub={`${analytics.pendingDrivers} pending approval`}
+                    />
+                    <KpiCard
+                      label="Active trips"
+                      value={analytics.activeBookings}
+                      sub="Now in progress"
+                    />
+                  </section>
 
-              {/* Top cities + utilization */}
-              <section className="grid md:grid-cols-2 gap-4">
-                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-                  <h2 className="text-sm font-semibold mb-3">
-                    Top cities by trips
-                  </h2>
-                  {analytics.topCities.length === 0 ? (
-                    <p className="text-xs text-slate-400">
-                      No city data available yet.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2 text-xs">
-                      {analytics.topCities.map(([city, count]) => (
-                        <li
-                          key={city}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-slate-200">{city}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
-                            {count} trips
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                  <section className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                      <h2 className="text-sm font-semibold mb-3">
+                        Top cities by trips
+                      </h2>
+                      {analytics.topCities.length === 0 ? (
+                        <p className="text-xs text-slate-400">
+                          No city data available yet.
+                        </p>
+                      ) : (
+                        <ul className="space-y-2 text-xs">
+                          {analytics.topCities.map(([city, count]) => (
+                            <li
+                              key={city}
+                              className="flex items-center justify-between"
+                            >
+                              <span className="text-slate-200">{city}</span>
+                              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                                {count} trips
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
 
-                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-                  <h2 className="text-sm font-semibold mb-3">
-                    Driver utilization
-                  </h2>
-                  <p className="text-xs text-slate-400 mb-2">
-                    This is a simple ratio of active drivers vs total.
-                  </p>
-                  <UtilizationBar
-                    active={analytics.activeDrivers}
-                    total={drivers.length}
-                  />
-                  <p className="mt-2 text-xs text-slate-400">
-                    {analytics.activeDrivers} active / {drivers.length} total
-                    drivers
-                  </p>
-                </div>
-              </section>
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                      <h2 className="text-sm font-semibold mb-3">
+                        Driver utilization
+                      </h2>
+                      <p className="text-xs text-slate-400 mb-2">
+                        Simple ratio of active drivers vs total.
+                      </p>
+                      <UtilizationBar
+                        active={analytics.activeDrivers}
+                        total={drivers.length}
+                      />
+                      <p className="mt-2 text-xs text-slate-400">
+                        {analytics.activeDrivers} active / {drivers.length} total
+                        drivers
+                      </p>
+                    </div>
+                  </section>
+                </>
+              )}
 
-              {/* Bookings + Drivers */}
-              <section className="grid lg:grid-cols-3 gap-4">
-                {/* Bookings */}
-                <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+              {/* BOOKINGS VIEW */}
+              {activeSection === "bookings" && (
+                <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold">Bookings</h2>
                     <div className="flex flex-wrap gap-1">
@@ -442,10 +484,12 @@ export default function AdminPage() {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </section>
+              )}
 
-                {/* Drivers */}
-                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+              {/* DRIVERS VIEW */}
+              {activeSection === "drivers" && (
+                <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold">Drivers</h2>
                     <span className="text-[11px] text-slate-400">
@@ -453,7 +497,7 @@ export default function AdminPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-[540px] overflow-y-auto pr-1">
                     {drivers.length === 0 ? (
                       <p className="text-xs text-slate-400">
                         No drivers found yet.
@@ -516,8 +560,47 @@ export default function AdminPage() {
                       })
                     )}
                   </div>
-                </div>
-              </section>
+                </section>
+              )}
+
+              {/* ANALYTICS VIEW (simple placeholder using same analytics) */}
+              {activeSection === "analytics" && (
+                <section className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                    <h2 className="text-sm font-semibold mb-3">
+                      Bookings summary
+                    </h2>
+                    <ul className="text-xs text-slate-300 space-y-1">
+                      <li>Total bookings: {analytics.totalBookings}</li>
+                      <li>Completed: {analytics.completedBookings}</li>
+                      <li>Cancelled: {analytics.cancelledBookings}</li>
+                      <li>Active: {analytics.activeBookings}</li>
+                    </ul>
+                  </div>
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                    <h2 className="text-sm font-semibold mb-3">
+                      Revenue estimate
+                    </h2>
+                    <p className="text-xs text-slate-400 mb-2">
+                      Rough calculation: ₹1000 per completed trip.
+                    </p>
+                    <div className="text-2xl font-semibold">
+                      ₹{analytics.revenueEstimate.toLocaleString()}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* SETTINGS VIEW (placeholder) */}
+              {activeSection === "settings" && (
+                <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                  <h2 className="text-sm font-semibold mb-3">Settings</h2>
+                  <p className="text-xs text-slate-400">
+                    Later you can add things like admin accounts, pricing rules,
+                    and notification preferences here.
+                  </p>
+                </section>
+              )}
             </>
           )}
         </main>
