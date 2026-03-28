@@ -57,63 +57,91 @@ function cityMatches(driverCity, bookingCity) {
   return driverCity.trim().toLowerCase() === bookingCity.trim().toLowerCase();
 }
 
-async function sendWhatsApp(phone, message) {
+// ---- Send SMS ----
+async function sendSMS(phone, message) {
   const digits = cleanPhone(phone);
   if (digits.length !== 10) {
     console.log(`⚠️ Invalid phone skipped: ${phone}`);
     return;
   }
-  const toNumber = `whatsapp:+91${digits}`;
+  const toNumber = `+91${digits}`;
   try {
     const msg = await twilioClient.messages.create({
-      from: process.env.TWILIO_WHATSAPP_FROM,
+      from: process.env.TWILIO_SMS_FROM,
       to: toNumber,
       body: message,
     });
-    console.log(`✅ WhatsApp sent to ${toNumber} SID: ${msg.sid}`);
+    console.log(`✅ SMS sent to ${toNumber} | SID: ${msg.sid}`);
   } catch (err) {
-    console.error(`❌ WhatsApp failed for ${toNumber}:`, err.message);
+    console.error(`❌ SMS failed for ${toNumber}:`, err.message);
   }
 }
 
+// ---- Notify matching drivers via SMS when new booking comes in ----
 async function notifyMatchingDrivers(booking) {
   try {
     const bookingCity = (booking.pickup || "").trim().toLowerCase();
     const bookingTruck = (booking.vehicleType || "").trim().toLowerCase();
+
     console.log(`🔍 Finding drivers — city:"${bookingCity}" truck:"${bookingTruck}"`);
 
-    const snap = await db.collection("drivers").where("status", "==", "active").get();
-    console.log(`📋 Active drivers total: ${snap.docs.length}`);
+    const snap = await db.collection("drivers").get();
+    console.log(`📋 Total drivers in DB: ${snap.docs.length}`);
 
     const matching = snap.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((d) => {
+        const isActive = (d.status || "").trim() === "active";
         const c = cityMatches(d.city, bookingCity);
         const t = truckTypeMatches(d.truckTypes, bookingTruck);
-        console.log(`  → ${d.name} | city:${d.city}(${c}) | truck:${d.truckTypes}(${t})`);
-        return c && t && d.phone;
+        console.log(
+          `  → ${d.name} | status:${d.status}(${isActive}) | city:${d.city}(${c}) | truck:${d.truckTypes}(${t})`
+        );
+        return isActive && c && t && d.phone;
       });
 
-    console.log(`✅ Matching: ${matching.length}`);
-    if (matching.length === 0) return;
+    console.log(`✅ Matching drivers: ${matching.length}`);
+    if (matching.length === 0) {
+      console.log("⚠️ No matching active drivers found");
+      return;
+    }
 
     const message =
-      `🚛 *New load available!*\n\n` +
-      `📦 *Pickup:* ${booking.pickup}\n` +
-      `📍 *Drop:* ${booking.drop}\n` +
-      `🕐 *Time:* ${booking.time}\n` +
-      `🚗 *Vehicle:* ${booking.vehicleType || "N/A"}\n` +
-      `👤 *Customer:* ${booking.name}\n\n` +
-      `First to accept gets the load!\n` +
-      `👉 Login: http://localhost:5173/driver`;
+      `ShifT: New load available!\n` +
+      `Pickup: ${booking.pickup}\n` +
+      `Drop: ${booking.drop}\n` +
+      `Vehicle: ${booking.vehicleType}\n` +
+      `Time: ${booking.time}\n` +
+      `Login to accept: http://localhost:5173/driver`;
 
-    await Promise.all(matching.map((d) => sendWhatsApp(d.phone, message)));
+    await Promise.all(matching.map((d) => sendSMS(d.phone, message)));
   } catch (err) {
     console.error("❌ notifyMatchingDrivers error:", err);
   }
 }
 
-async function notifySpecificDriver(driverId, booking) {
+// ---- Notify customer when driver is assigned ----
+async function notifyCustomer(booking, driver) {
+  try {
+    if (!booking.phone) return;
+
+    const message =
+      `ShifT: Your booking is confirmed!\n` +
+      `Driver: ${driver.name}\n` +
+      `Phone: +91${driver.phone}\n` +
+      `Vehicle: ${driver.truckTypes || booking.vehicleType}\n` +
+      `Pickup: ${booking.pickup} → ${booking.drop}\n` +
+      `Time: ${booking.time}`;
+
+    await sendSMS(booking.phone, message);
+    console.log(`✅ Customer notified: +91${booking.phone}`);
+  } catch (err) {
+    console.error("❌ notifyCustomer error:", err);
+  }
+}
+
+// ---- Notify specific driver when admin assigns them ----
+async function notifyAssignedDriver(driverId, booking) {
   try {
     const snap = await db.collection("drivers").doc(driverId).get();
     if (!snap.exists) return;
@@ -121,17 +149,17 @@ async function notifySpecificDriver(driverId, booking) {
     if (!driver.phone) return;
 
     const message =
-      `🚛 *Load assigned to you!*\n\n` +
-      `📦 *Pickup:* ${booking.pickup}\n` +
-      `📍 *Drop:* ${booking.drop}\n` +
-      `🕐 *Time:* ${booking.time}\n` +
-      `🚗 *Vehicle:* ${booking.vehicleType || "N/A"}\n` +
-      `👤 *Customer:* ${booking.name}\n\n` +
-      `👉 View load: http://localhost:5173/driver`;
+      `ShifT: Load assigned to you!\n` +
+      `Pickup: ${booking.pickup}\n` +
+      `Drop: ${booking.drop}\n` +
+      `Vehicle: ${booking.vehicleType}\n` +
+      `Customer: ${booking.name}\n` +
+      `Time: ${booking.time}\n` +
+      `Login: http://localhost:5173/driver`;
 
-    await sendWhatsApp(driver.phone, message);
+    await sendSMS(driver.phone, message);
   } catch (err) {
-    console.error("❌ notifySpecificDriver error:", err);
+    console.error("❌ notifyAssignedDriver error:", err);
   }
 }
 
@@ -148,11 +176,17 @@ app.get("/bookings/city/:city", async (req, res) => {
     const driverId = req.query.driverId || null;
     const truckType = req.query.truckType || "";
 
-    const pendingSnap = await db.collection("bookings").where("status", "==", "pending").get();
+    const pendingSnap = await db
+      .collection("bookings")
+      .where("status", "==", "pending")
+      .get();
 
     let assignedSnap = { docs: [] };
     if (driverId) {
-      assignedSnap = await db.collection("bookings").where("driverId", "==", driverId).get();
+      assignedSnap = await db
+        .collection("bookings")
+        .where("driverId", "==", driverId)
+        .get();
     }
 
     const pendingData = pendingSnap.docs
@@ -179,7 +213,10 @@ app.get("/bookings/city/:city", async (req, res) => {
 // List all bookings
 app.get("/bookings", async (req, res) => {
   try {
-    const snap = await db.collection("bookings").orderBy("createdAt", "desc").get();
+    const snap = await db
+      .collection("bookings")
+      .orderBy("createdAt", "desc")
+      .get();
     const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     res.json(data);
   } catch (err) {
@@ -188,13 +225,15 @@ app.get("/bookings", async (req, res) => {
   }
 });
 
-// Create booking
+// Create booking — notifies matching drivers via SMS
 app.post("/bookings", async (req, res) => {
   try {
     const { name, phone, pickup, drop, time, vehicleType, loadDetails } = req.body;
     const missing = requireFields(req.body, ["name", "phone", "pickup", "drop", "time"]);
     if (missing.length > 0) {
-      return res.status(400).json({ error: `Missing required fields: ${missing.join(", ")}` });
+      return res.status(400).json({
+        error: `Missing required fields: ${missing.join(", ")}`,
+      });
     }
     const booking = {
       name: String(name).trim(),
@@ -210,7 +249,10 @@ app.post("/bookings", async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
     const docRef = await db.collection("bookings").add(booking);
+
+    // Fire and forget — notify matching drivers
     notifyMatchingDrivers(booking);
+
     return res.status(201).json({ id: docRef.id, ...booking });
   } catch (err) {
     console.error("Create booking failed", err);
@@ -221,10 +263,15 @@ app.post("/bookings", async (req, res) => {
 // Create driver
 app.post("/drivers", async (req, res) => {
   try {
-    const { name, phone, city, truckTypes, fleetSize, drivingLicenseNo, aadharNumber } = req.body;
+    const {
+      name, phone, city, truckTypes,
+      fleetSize, drivingLicenseNo, aadharNumber,
+    } = req.body;
     const missing = requireFields(req.body, ["name", "phone", "city"]);
     if (missing.length > 0) {
-      return res.status(400).json({ error: `Missing required fields: ${missing.join(", ")}` });
+      return res.status(400).json({
+        error: `Missing required fields: ${missing.join(", ")}`,
+      });
     }
     const driver = {
       name: String(name).trim(),
@@ -255,10 +302,16 @@ app.post("/drivers", async (req, res) => {
 app.get("/drivers", async (req, res) => {
   try {
     if (req.query.authUid) {
-      const snap = await db.collection("drivers").where("authUid", "==", req.query.authUid).get();
+      const snap = await db
+        .collection("drivers")
+        .where("authUid", "==", req.query.authUid)
+        .get();
       return res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     }
-    const snap = await db.collection("drivers").orderBy("createdAt", "desc").get();
+    const snap = await db
+      .collection("drivers")
+      .orderBy("createdAt", "desc")
+      .get();
     res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   } catch (err) {
     console.error("Get drivers failed", err);
@@ -270,7 +323,9 @@ app.get("/drivers", async (req, res) => {
 app.patch("/drivers/:id/approve", async (req, res) => {
   try {
     const ref = db.collection("drivers").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Driver not found" });
+    if (!(await ref.get()).exists) {
+      return res.status(404).json({ error: "Driver not found" });
+    }
     await ref.update({ status: "active", updatedAt: new Date().toISOString() });
     res.json({ success: true });
   } catch (err) {
@@ -282,7 +337,9 @@ app.patch("/drivers/:id/approve", async (req, res) => {
 app.patch("/drivers/:id/deactivate", async (req, res) => {
   try {
     const ref = db.collection("drivers").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Driver not found" });
+    if (!(await ref.get()).exists) {
+      return res.status(404).json({ error: "Driver not found" });
+    }
     await ref.update({ status: "inactive", updatedAt: new Date().toISOString() });
     res.json({ success: true });
   } catch (err) {
@@ -296,7 +353,9 @@ app.patch("/drivers/:id/link-auth", async (req, res) => {
     const { authUid } = req.body;
     if (!authUid) return res.status(400).json({ error: "authUid required" });
     const ref = db.collection("drivers").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Driver not found" });
+    if (!(await ref.get()).exists) {
+      return res.status(404).json({ error: "Driver not found" });
+    }
     await ref.update({ authUid, updatedAt: new Date().toISOString() });
     res.json({ success: true });
   } catch (err) {
@@ -304,30 +363,58 @@ app.patch("/drivers/:id/link-auth", async (req, res) => {
   }
 });
 
-// Assign driver (admin) — notifies driver via WhatsApp
+// Assign driver (admin) — notifies driver + customer via SMS
 app.patch("/bookings/:id/assign-driver", async (req, res) => {
   try {
     const { driverId } = req.body;
     if (!driverId) return res.status(400).json({ error: "driverId required" });
-    const ref = db.collection("bookings").doc(req.params.id);
-    const snap = await ref.get();
-    if (!snap.exists) return res.status(404).json({ error: "Booking not found" });
-    await ref.update({ driverId, status: "assigned", updatedAt: new Date().toISOString() });
-    notifySpecificDriver(driverId, { ...snap.data(), id: req.params.id });
+
+    const bookingRef = db.collection("bookings").doc(req.params.id);
+    const bookingSnap = await bookingRef.get();
+    if (!bookingSnap.exists) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    const driverRef = db.collection("drivers").doc(driverId);
+    const driverSnap = await driverRef.get();
+    if (!driverSnap.exists) {
+      return res.status(404).json({ error: "Driver not found" });
+    }
+
+    await bookingRef.update({
+      driverId,
+      status: "assigned",
+      updatedAt: new Date().toISOString(),
+    });
+
+    const booking = { ...bookingSnap.data(), id: req.params.id };
+    const driver = { ...driverSnap.data(), id: driverId };
+
+    // Notify driver via SMS
+    notifyAssignedDriver(driverId, booking);
+
+    // Notify customer via SMS
+    notifyCustomer(booking, driver);
+
     res.json({ success: true });
   } catch (err) {
+    console.error("Assign driver failed", err);
     res.status(500).json({ error: "Failed to assign driver" });
   }
 });
 
-// Update booking status (admin complete/cancel)
+// Update booking status
 app.patch("/bookings/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
     const allowed = ["pending", "assigned", "accepted", "on_trip", "completed", "cancelled"];
-    if (!allowed.includes(status)) return res.status(400).json({ error: "Invalid status" });
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
     const ref = db.collection("bookings").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Booking not found" });
+    if (!(await ref.get()).exists) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
     await ref.update({ status, updatedAt: new Date().toISOString() });
     res.json({ success: true });
   } catch (err) {
@@ -335,7 +422,7 @@ app.patch("/bookings/:id/status", async (req, res) => {
   }
 });
 
-// Self-assign (atomic — first come first served)
+// Self-assign (atomic)
 app.patch("/bookings/:id/self-assign", async (req, res) => {
   try {
     const { driverId } = req.body;
@@ -344,11 +431,19 @@ app.patch("/bookings/:id/self-assign", async (req, res) => {
     const result = await db.runTransaction(async (t) => {
       const doc = await t.get(ref);
       if (!doc.exists) throw new Error("Booking not found");
-      if (doc.data().status !== "pending") return { success: false };
-      t.update(ref, { driverId, status: "accepted", updatedAt: new Date().toISOString() });
+      if (doc.data().status !== "pending") {
+        return { success: false };
+      }
+      t.update(ref, {
+        driverId,
+        status: "accepted",
+        updatedAt: new Date().toISOString(),
+      });
       return { success: true };
     });
-    if (!result.success) return res.status(409).json({ error: "Booking already taken" });
+    if (!result.success) {
+      return res.status(409).json({ error: "Booking already taken" });
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to accept booking" });
@@ -363,21 +458,31 @@ app.patch("/bookings/:id/release", async (req, res) => {
     const ref = db.collection("bookings").doc(req.params.id);
     const snap = await ref.get();
     if (!snap.exists) return res.status(404).json({ error: "Booking not found" });
-    if (snap.data().driverId !== driverId) return res.status(403).json({ error: "Not your booking" });
-    await ref.update({ driverId: null, status: "pending", updatedAt: new Date().toISOString() });
+    if (snap.data().driverId !== driverId) {
+      return res.status(403).json({ error: "Not your booking" });
+    }
+    await ref.update({
+      driverId: null,
+      status: "pending",
+      updatedAt: new Date().toISOString(),
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to release booking" });
   }
 });
 
-// Driver response (accept/reject admin-assigned)
+// Driver response
 app.patch("/bookings/:id/driver-response", async (req, res) => {
   try {
     const { action } = req.body;
-    if (!["accept", "reject"].includes(action)) return res.status(400).json({ error: "Invalid action" });
+    if (!["accept", "reject"].includes(action)) {
+      return res.status(400).json({ error: "Invalid action" });
+    }
     const ref = db.collection("bookings").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Booking not found" });
+    if (!(await ref.get()).exists) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
     const newStatus = action === "accept" ? "accepted" : "pending";
     await ref.update({ status: newStatus, updatedAt: new Date().toISOString() });
     res.json({ success: true, status: newStatus });
@@ -389,7 +494,10 @@ app.patch("/bookings/:id/driver-response", async (req, res) => {
 // Get driver's bookings
 app.get("/drivers/:id/bookings", async (req, res) => {
   try {
-    const snap = await db.collection("bookings").where("driverId", "==", req.params.id).get();
+    const snap = await db
+      .collection("bookings")
+      .where("driverId", "==", req.params.id)
+      .get();
     const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json(data);
