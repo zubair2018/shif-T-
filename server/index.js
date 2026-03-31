@@ -2,23 +2,29 @@
 import express from "express";
 import cors from "cors";
 import admin from "firebase-admin";
-import { createRequire } from "module";
-import { existsSync } from "fs";
 import twilio from "twilio";
 import * as dotenv from "dotenv";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Firebase init — works locally and on Render
 if (!admin.apps.length) {
   let serviceAccount;
   if (process.env.SERVICE_ACCOUNT_KEY) {
     serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
+    console.log("✅ Using SERVICE_ACCOUNT_KEY from environment");
   } else {
-    const require = createRequire(import.meta.url);
-    serviceAccount = require("./serviceAccountKey.json");
+    const filePath = join(__dirname, "serviceAccountKey.json");
+    serviceAccount = JSON.parse(readFileSync(filePath, "utf8"));
+    console.log("✅ Using serviceAccountKey.json from file");
   }
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
@@ -82,7 +88,8 @@ async function sendSMS(phone, message) {
 }
 
 async function smsBookingConfirmation(booking) {
-  await sendSMS(booking.phone,
+  await sendSMS(
+    booking.phone,
     `ShifT: Booking Received!\n` +
     `Hi ${booking.name}, your booking is confirmed.\n` +
     `Pickup: ${booking.pickup}\n` +
@@ -129,7 +136,8 @@ async function smsNotifyMatchingDrivers(booking) {
 }
 
 async function smsDriverAssignedToCustomer(booking, driver) {
-  await sendSMS(booking.phone,
+  await sendSMS(
+    booking.phone,
     `ShifT: Driver Assigned!\n` +
     `Hi ${booking.name}, a driver is on the way.\n` +
     `Driver: ${driver.name}\n` +
@@ -141,7 +149,8 @@ async function smsDriverAssignedToCustomer(booking, driver) {
 }
 
 async function smsDriverAssigned(driver, booking) {
-  await sendSMS(driver.phone,
+  await sendSMS(
+    driver.phone,
     `ShifT: Load Assigned to You!\n` +
     `Hi ${driver.name}!\n` +
     `Pickup: ${booking.pickup}\n` +
@@ -166,10 +175,17 @@ app.get("/bookings/city/:city", async (req, res) => {
     const driverId = req.query.driverId || null;
     const truckType = req.query.truckType || "";
 
-    const pendingSnap = await db.collection("bookings").where("status", "==", "pending").get();
+    const pendingSnap = await db
+      .collection("bookings")
+      .where("status", "==", "pending")
+      .get();
+
     let assignedSnap = { docs: [] };
     if (driverId) {
-      assignedSnap = await db.collection("bookings").where("driverId", "==", driverId).get();
+      assignedSnap = await db
+        .collection("bookings")
+        .where("driverId", "==", driverId)
+        .get();
     }
 
     const pendingData = pendingSnap.docs
@@ -194,7 +210,10 @@ app.get("/bookings/city/:city", async (req, res) => {
 
 app.get("/bookings", async (req, res) => {
   try {
-    const snap = await db.collection("bookings").orderBy("createdAt", "desc").get();
+    const snap = await db
+      .collection("bookings")
+      .orderBy("createdAt", "desc")
+      .get();
     res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   } catch (err) {
     res.status(500).json({ error: "Failed to load bookings" });
@@ -265,10 +284,16 @@ app.post("/drivers", async (req, res) => {
 app.get("/drivers", async (req, res) => {
   try {
     if (req.query.authUid) {
-      const snap = await db.collection("drivers").where("authUid", "==", req.query.authUid).get();
+      const snap = await db
+        .collection("drivers")
+        .where("authUid", "==", req.query.authUid)
+        .get();
       return res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     }
-    const snap = await db.collection("drivers").orderBy("createdAt", "desc").get();
+    const snap = await db
+      .collection("drivers")
+      .orderBy("createdAt", "desc")
+      .get();
     res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   } catch (err) {
     res.status(500).json({ error: "Failed to load drivers" });
@@ -320,7 +345,11 @@ app.patch("/bookings/:id/assign-driver", async (req, res) => {
     const driverRef = db.collection("drivers").doc(driverId);
     const driverSnap = await driverRef.get();
     if (!driverSnap.exists) return res.status(404).json({ error: "Driver not found" });
-    await bookingRef.update({ driverId, status: "assigned", updatedAt: new Date().toISOString() });
+    await bookingRef.update({
+      driverId,
+      status: "assigned",
+      updatedAt: new Date().toISOString(),
+    });
     const booking = { ...bookingSnap.data(), id: req.params.id };
     const driver = { ...driverSnap.data(), id: driverId };
     smsDriverAssigned(driver, booking);
@@ -354,7 +383,11 @@ app.patch("/bookings/:id/self-assign", async (req, res) => {
       const doc = await t.get(ref);
       if (!doc.exists) throw new Error("Booking not found");
       if (doc.data().status !== "pending") return { success: false };
-      t.update(ref, { driverId, status: "accepted", updatedAt: new Date().toISOString() });
+      t.update(ref, {
+        driverId,
+        status: "accepted",
+        updatedAt: new Date().toISOString(),
+      });
       return { success: true };
     });
     if (!result.success) return res.status(409).json({ error: "Booking already taken" });
@@ -372,7 +405,11 @@ app.patch("/bookings/:id/release", async (req, res) => {
     const snap = await ref.get();
     if (!snap.exists) return res.status(404).json({ error: "Booking not found" });
     if (snap.data().driverId !== driverId) return res.status(403).json({ error: "Not your booking" });
-    await ref.update({ driverId: null, status: "pending", updatedAt: new Date().toISOString() });
+    await ref.update({
+      driverId: null,
+      status: "pending",
+      updatedAt: new Date().toISOString(),
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to release booking" });
@@ -395,7 +432,10 @@ app.patch("/bookings/:id/driver-response", async (req, res) => {
 
 app.get("/drivers/:id/bookings", async (req, res) => {
   try {
-    const snap = await db.collection("bookings").where("driverId", "==", req.params.id).get();
+    const snap = await db
+      .collection("bookings")
+      .where("driverId", "==", req.params.id)
+      .get();
     const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json(data);
