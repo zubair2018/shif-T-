@@ -416,17 +416,43 @@ app.patch("/bookings/:id/release", async (req, res) => {
   }
 });
 
-app.patch("/bookings/:id/driver-response", async (req, res) => {
+app.patch("/bookings/:id/status", async (req, res) => {
   try {
-    const { action } = req.body;
-    if (!["accept", "reject"].includes(action)) return res.status(400).json({ error: "Invalid action" });
+    const { status } = req.body;
+    const allowed = ["pending", "assigned", "accepted", "on_trip", "completed", "cancelled"];
+    if (!allowed.includes(status)) return res.status(400).json({ error: "Invalid status" });
+
     const ref = db.collection("bookings").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Booking not found" });
-    const newStatus = action === "accept" ? "accepted" : "pending";
-    await ref.update({ status: newStatus, updatedAt: new Date().toISOString() });
-    res.json({ success: true, status: newStatus });
+    const snap = await ref.get();
+    if (!snap.exists) return res.status(404).json({ error: "Booking not found" });
+
+    await ref.update({ status, updatedAt: new Date().toISOString() });
+
+    const booking = snap.data();
+
+    // SMS customer when trip starts
+    if (status === "on_trip" && booking.phone) {
+      sendSMS(
+        booking.phone,
+        `ShifT: Your trip has started!\n` +
+        `Driver is on the way.\n` +
+        `Route: ${booking.pickup} → ${booking.drop}`
+      );
+    }
+
+    // SMS customer when trip completes
+    if (status === "completed" && booking.phone) {
+      sendSMS(
+        booking.phone,
+        `ShifT: Trip Completed! ✅\n` +
+        `Your delivery from ${booking.pickup} to ${booking.drop} is complete.\n` +
+        `Thank you for using ShifT!`
+      );
+    }
+
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to update booking" });
+    res.status(500).json({ error: "Failed to update status" });
   }
 });
 

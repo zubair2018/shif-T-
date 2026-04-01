@@ -23,17 +23,28 @@ function StatusBadge({ status }) {
     completed: "bg-sky-500/15 text-sky-300 border-sky-500/30",
     cancelled: "bg-red-500/15 text-red-300 border-red-500/30",
   };
+  const labels = {
+    pending: "Pending",
+    assigned: "Assigned",
+    accepted: "Accepted",
+    on_trip: "On Trip 🚛",
+    completed: "Completed ✅",
+    cancelled: "Cancelled",
+  };
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[10px] border font-medium capitalize ${colors[status] || "bg-slate-700 text-slate-300"}`}>
-      {status}
+    <span className={`px-2 py-0.5 rounded-full text-[10px] border font-medium ${colors[status] || "bg-slate-700 text-slate-300"}`}>
+      {labels[status] || status}
     </span>
   );
 }
 
-function BookingDetailModal({ booking, onClose, onAccept, onRelease }) {
+function BookingDetailModal({ booking, onClose, onAccept, onRelease, onStartTrip, onCompleteTrip }) {
   const isPending = booking.status === "pending";
   const isAssigned = booking.status === "assigned" && booking.driverId === DRIVER_ID;
   const isAccepted = booking.status === "accepted" && booking.driverId === DRIVER_ID;
+  const isOnTrip = booking.status === "on_trip" && booking.driverId === DRIVER_ID;
+  const isCompleted = booking.status === "completed";
+  const isCancelled = booking.status === "cancelled";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur p-4">
@@ -63,26 +74,58 @@ function BookingDetailModal({ booking, onClose, onAccept, onRelease }) {
           </div>
         </div>
 
-        <div className="flex gap-2 pt-1">
+        {/* Action buttons based on status */}
+        <div className="flex flex-col gap-2 pt-1">
+          {/* Accept load */}
           {(isPending || isAssigned) && (
             <button
               onClick={() => onAccept(booking.id)}
-              className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm"
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition"
             >
               ✅ Accept Load
             </button>
           )}
+
+          {/* Start trip */}
+          {isAccepted && (
+            <button
+              onClick={() => onStartTrip(booking.id)}
+              className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition"
+            >
+              🚛 Start Trip
+            </button>
+          )}
+
+          {/* Complete trip */}
+          {isOnTrip && (
+            <button
+              onClick={() => onCompleteTrip(booking.id)}
+              className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm transition"
+            >
+              🏁 Mark as Completed
+            </button>
+          )}
+
+          {/* Release load — only if accepted, not yet on trip */}
           {isAccepted && (
             <button
               onClick={() => onRelease(booking.id)}
-              className="flex-1 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-semibold text-sm"
+              className="w-full py-2.5 rounded-xl bg-rose-800 hover:bg-rose-700 text-white font-semibold text-sm transition"
             >
               🔄 Release Load
             </button>
           )}
+
+          {/* Completed/cancelled — just show status */}
+          {(isCompleted || isCancelled) && (
+            <div className="text-center text-slate-400 text-xs py-2">
+              This trip is {booking.status}. No further actions needed.
+            </div>
+          )}
+
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm"
+            className="w-full py-2.5 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm transition"
           >
             Close
           </button>
@@ -109,10 +152,10 @@ export default function DriverPage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("available");
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [actionLoading, setActionLoading] = useState("");
 
   useEffect(() => {
     loadAll();
-    // Auto-refresh every 30 seconds
     const interval = setInterval(loadAll, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -145,6 +188,7 @@ export default function DriverPage() {
 
   const handleAccept = async (bookingId) => {
     try {
+      setActionLoading(bookingId);
       const booking = [...cityBookings, ...allBookings].find((b) => b.id === bookingId);
       if (!booking) return;
       if (booking.status === "pending") {
@@ -165,12 +209,15 @@ export default function DriverPage() {
     } catch (err) {
       alert(err.message || "Failed to accept. Someone else may have taken it.");
       await loadAll();
+    } finally {
+      setActionLoading("");
     }
   };
 
   const handleRelease = async (bookingId) => {
     if (!window.confirm("Release this load back to the pool?")) return;
     try {
+      setActionLoading(bookingId);
       await fetchJson(`${API_BASE}/bookings/${bookingId}/release`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -180,6 +227,44 @@ export default function DriverPage() {
       await loadAll();
     } catch (err) {
       alert(err.message || "Failed to release");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleStartTrip = async (bookingId) => {
+    if (!window.confirm("Start this trip? This will notify the customer.")) return;
+    try {
+      setActionLoading(bookingId);
+      await fetchJson(`${API_BASE}/bookings/${bookingId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "on_trip" }),
+      });
+      setSelectedBooking(null);
+      await loadAll();
+    } catch (err) {
+      alert(err.message || "Failed to start trip");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleCompleteTrip = async (bookingId) => {
+    if (!window.confirm("Mark this trip as completed?")) return;
+    try {
+      setActionLoading(bookingId);
+      await fetchJson(`${API_BASE}/bookings/${bookingId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      setSelectedBooking(null);
+      await loadAll();
+    } catch (err) {
+      alert(err.message || "Failed to complete trip");
+    } finally {
+      setActionLoading("");
     }
   };
 
@@ -204,6 +289,8 @@ export default function DriverPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+
+        {/* Header */}
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Driver Dashboard</h1>
@@ -221,6 +308,19 @@ export default function DriverPage() {
           </button>
         </header>
 
+        {/* Trip status legend */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
+          <p className="text-[11px] text-slate-400 mb-2 font-medium">Trip Progress</p>
+          <div className="flex items-center gap-1 text-[10px] text-slate-400 flex-wrap">
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Accepted</span>
+            <span>→</span>
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">On Trip 🚛</span>
+            <span>→</span>
+            <span className="px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">Completed ✅</span>
+          </div>
+        </div>
+
+        {/* Tabs */}
         <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
           {tabs.map((tab) => (
             <button
@@ -237,12 +337,14 @@ export default function DriverPage() {
           ))}
         </div>
 
+        {/* Error */}
         {error && (
           <div className="px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/40 text-xs text-rose-100">
             {error}
           </div>
         )}
 
+        {/* List */}
         {loading ? (
           <p className="text-sm text-slate-400">Loading...</p>
         ) : displayBookings.length === 0 ? (
@@ -272,6 +374,9 @@ export default function DriverPage() {
                       👤 {b.name} · 🚛 {b.vehicleType}
                     </div>
                     <div className="text-[11px] text-slate-500">🕐 {b.time}</div>
+                    {b.loadDetails && (
+                      <div className="text-[11px] text-slate-500">📦 {b.loadDetails}</div>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <StatusBadge status={b.status} />
@@ -280,6 +385,31 @@ export default function DriverPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Quick action buttons on card */}
+                {b.driverId === DRIVER_ID && (
+                  <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    {b.status === "accepted" && (
+                      <button
+                        onClick={() => handleStartTrip(b.id)}
+                        disabled={actionLoading === b.id}
+                        className="px-3 py-1 text-xs rounded-full bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-50"
+                      >
+                        {actionLoading === b.id ? "..." : "🚛 Start Trip"}
+                      </button>
+                    )}
+                    {b.status === "on_trip" && (
+                      <button
+                        onClick={() => handleCompleteTrip(b.id)}
+                        disabled={actionLoading === b.id}
+                        className="px-3 py-1 text-xs rounded-full bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-50"
+                      >
+                        {actionLoading === b.id ? "..." : "🏁 Complete"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="mt-2 text-[11px] text-blue-400">Tap for details →</div>
               </div>
             ))}
@@ -287,12 +417,15 @@ export default function DriverPage() {
         )}
       </div>
 
+      {/* Detail modal */}
       {selectedBooking && (
         <BookingDetailModal
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
           onAccept={handleAccept}
           onRelease={handleRelease}
+          onStartTrip={handleStartTrip}
+          onCompleteTrip={handleCompleteTrip}
         />
       )}
     </div>

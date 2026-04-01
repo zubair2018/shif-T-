@@ -27,7 +27,7 @@ const STATUS_COLORS = {
   inactive: "bg-slate-500/20 text-slate-300 border-slate-500/40",
 };
 
-const BOOKING_FILTERS = ["All", "Pending", "Assigned", "Accepted", "Completed", "Cancelled"];
+const BOOKING_FILTERS = ["All", "Pending", "Assigned", "Accepted", "On Trip", "Completed", "Cancelled"];
 
 export default function AdminPage() {
   const [bookings, setBookings] = useState([]);
@@ -37,6 +37,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
   const [bookingFilter, setBookingFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [assignModal, setAssignModal] = useState(null);
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [actionLoading, setActionLoading] = useState("");
@@ -61,11 +62,7 @@ export default function AdminPage() {
         setLoading(false);
       }
     })();
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      loadData().catch(console.error);
-    }, 30000);
+    const interval = setInterval(() => loadData().catch(console.error), 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -145,6 +142,7 @@ export default function AdminPage() {
     const active = bookings.filter((b) => ["accepted", "assigned", "on_trip"].includes(b.status)).length;
     const cancelled = bookings.filter((b) => b.status === "cancelled").length;
     const pending = bookings.filter((b) => b.status === "pending").length;
+    const onTrip = bookings.filter((b) => b.status === "on_trip").length;
     const activeDrivers = drivers.filter((d) => d.status === "active").length;
     const pendingDrivers = drivers.filter((d) => d.status === "pending").length;
     const revenue = completed * 1000;
@@ -156,13 +154,41 @@ export default function AdminPage() {
     }
     const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-    return { total, completed, active, cancelled, pending, activeDrivers, pendingDrivers, revenue, topCities };
+    return { total, completed, active, cancelled, pending, onTrip, activeDrivers, pendingDrivers, revenue, topCities };
   }, [bookings, drivers]);
 
+  // Filter + search combined
   const filteredBookings = useMemo(() => {
-    if (bookingFilter === "All") return bookings;
-    return bookings.filter((b) => b.status === bookingFilter.toLowerCase());
-  }, [bookings, bookingFilter]);
+    let result = bookings;
+
+    // Status filter
+    if (bookingFilter !== "All") {
+      const filterMap = {
+        "Pending": "pending",
+        "Assigned": "assigned",
+        "Accepted": "accepted",
+        "On Trip": "on_trip",
+        "Completed": "completed",
+        "Cancelled": "cancelled",
+      };
+      result = result.filter((b) => b.status === filterMap[bookingFilter]);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((b) =>
+        (b.name || "").toLowerCase().includes(q) ||
+        (b.phone || "").includes(q) ||
+        (b.pickup || "").toLowerCase().includes(q) ||
+        (b.drop || "").toLowerCase().includes(q) ||
+        (b.vehicleType || "").toLowerCase().includes(q) ||
+        (b.status || "").toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [bookings, bookingFilter, searchQuery]);
 
   const navItems = [
     { key: "dashboard", label: "Dashboard", badge: null },
@@ -173,6 +199,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+
       {/* Sidebar */}
       <aside className="hidden md:flex md:flex-col w-60 bg-slate-900/80 border-r border-slate-800">
         <div className="px-5 py-5 border-b border-slate-800">
@@ -208,6 +235,7 @@ export default function AdminPage() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
+
         {/* Topbar */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-10">
           <div>
@@ -250,7 +278,7 @@ export default function AdminPage() {
                     <KpiCard label="Total Bookings" value={analytics.total} sub={`${analytics.pending} pending`} color="blue" />
                     <KpiCard label="Revenue Est." value={`₹${analytics.revenue.toLocaleString()}`} sub={`${analytics.completed} completed`} color="green" />
                     <KpiCard label="Active Drivers" value={analytics.activeDrivers} sub={`${analytics.pendingDrivers} awaiting approval`} color="yellow" />
-                    <KpiCard label="Active Trips" value={analytics.active} sub="In progress" color="purple" />
+                    <KpiCard label="On Trip Now" value={analytics.onTrip} sub={`${analytics.active} total active`} color="purple" />
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -260,6 +288,7 @@ export default function AdminPage() {
                         {[
                           { label: "Pending", value: analytics.pending, color: "bg-yellow-400" },
                           { label: "Active", value: analytics.active, color: "bg-emerald-400" },
+                          { label: "On Trip", value: analytics.onTrip, color: "bg-purple-400" },
                           { label: "Completed", value: analytics.completed, color: "bg-sky-400" },
                           { label: "Cancelled", value: analytics.cancelled, color: "bg-rose-400" },
                         ].map((item) => (
@@ -295,7 +324,6 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Recent bookings */}
                   <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
                     <h2 className="text-sm font-semibold mb-3">Recent Bookings</h2>
                     <div className="space-y-2">
@@ -319,22 +347,49 @@ export default function AdminPage() {
               {activeSection === "bookings" && (
                 <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold">All Bookings ({filteredBookings.length})</h2>
-                    <div className="flex flex-wrap gap-1">
-                      {BOOKING_FILTERS.map((f) => (
+                    <h2 className="text-sm font-semibold">
+                      Bookings ({filteredBookings.length}
+                      {searchQuery && ` of ${bookings.length}`})
+                    </h2>
+                  </div>
+
+                  {/* Search bar */}
+                  <div className="mb-4">
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+                      <input
+                        type="text"
+                        placeholder="Search by name, phone, area, status..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                      {searchQuery && (
                         <button
-                          key={f}
-                          onClick={() => setBookingFilter(f)}
-                          className={`px-2 py-1 text-[11px] rounded-full border ${
-                            bookingFilter === f
-                              ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/50"
-                              : "bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800"
-                          }`}
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm"
                         >
-                          {f}
+                          ✕
                         </button>
-                      ))}
+                      )}
                     </div>
+                  </div>
+
+                  {/* Status filters */}
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {BOOKING_FILTERS.map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setBookingFilter(f)}
+                        className={`px-2 py-1 text-[11px] rounded-full border ${
+                          bookingFilter === f
+                            ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/50"
+                            : "bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
                   </div>
 
                   <div className="overflow-x-auto">
@@ -352,7 +407,11 @@ export default function AdminPage() {
                       <tbody>
                         {filteredBookings.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="py-8 text-center text-slate-500">No bookings found.</td>
+                            <td colSpan={6} className="py-8 text-center text-slate-500">
+                              {searchQuery
+                                ? `No bookings found for "${searchQuery}"`
+                                : "No bookings found."}
+                            </td>
                           </tr>
                         ) : (
                           filteredBookings.map((b) => (
@@ -495,6 +554,7 @@ export default function AdminPage() {
                         { label: "Total Bookings", value: analytics.total },
                         { label: "Pending", value: analytics.pending },
                         { label: "Active", value: analytics.active },
+                        { label: "On Trip", value: analytics.onTrip },
                         { label: "Completed", value: analytics.completed },
                         { label: "Cancelled", value: analytics.cancelled },
                       ].map((item) => (
