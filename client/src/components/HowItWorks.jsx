@@ -4,127 +4,99 @@ const steps = [
     number: "01",
     title: "Tell us what you're moving",
     desc: "Fill a 1-minute form with pickup, drop, and whether it's house goods, mandi load, or factory material.",
-    badge: "Step 1",
     icon: "📦",
-    color: "from-yellow-500/20 to-yellow-500/5",
-    border: "border-yellow-500/20",
-    glow: "shadow-[0_0_30px_rgba(234,179,8,0.1)]",
+    color: "from-yellow-500/10 to-yellow-500/0",
+    border: "border-yellow-500/15",
+    accent: "text-yellow-400",
+    dot: "bg-yellow-400",
   },
   {
     number: "02",
     title: "We ping the right trucks",
-    desc: "ShifT checks mini, medium, or heavy trucks that are online near your pickup city and matches the best owner.",
-    badge: "Step 2",
+    desc: "ShifT checks mini, medium, or heavy trucks online near your pickup city and matches the best owner instantly.",
     icon: "🚛",
-    color: "from-blue-500/20 to-blue-500/5",
-    border: "border-blue-500/20",
-    glow: "shadow-[0_0_30px_rgba(59,130,246,0.1)]",
+    color: "from-blue-500/10 to-blue-500/0",
+    border: "border-blue-500/15",
+    accent: "text-blue-400",
+    dot: "bg-blue-400",
   },
   {
     number: "03",
     title: "You confirm and roll",
-    desc: "You get the truck details and price. Once confirmed, the owner heads to your pickup and the trip starts.",
-    badge: "Step 3",
+    desc: "You get the truck details. Once confirmed, the owner heads to your pickup and the trip starts — tracked live.",
     icon: "✅",
-    color: "from-emerald-500/20 to-emerald-500/5",
-    border: "border-emerald-500/20",
-    glow: "shadow-[0_0_30px_rgba(16,185,129,0.1)]",
+    color: "from-emerald-500/10 to-emerald-500/0",
+    border: "border-emerald-500/15",
+    accent: "text-emerald-400",
+    dot: "bg-emerald-400",
   },
 ];
 
 const HowItWorks = () => {
   return (
-    <section
-      id="how"
-      className="relative bg-slate-950 py-16 md:py-24 overflow-hidden"
-    >
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(234,179,8,0.03)_0%,_transparent_60%)]" />
+    <section id="how" className="relative bg-slate-950 py-20 md:py-28 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(250,204,21,0.05),transparent)]" />
 
       <div className="relative mx-auto max-w-6xl px-6">
 
-        {/* Header */}
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-yellow-500/20 bg-yellow-500/5 px-3 py-1.5 mb-4">
-            <span className="text-[11px] text-yellow-300 font-medium tracking-widest uppercase">
-              How it works
-            </span>
+        {/* Header — LEFT aligned */}
+        <div className="mb-16 max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-yellow-500/20 bg-yellow-500/5 px-4 py-1.5 mb-5">
+            <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+            <span className="text-[11px] text-yellow-300 font-semibold tracking-widest uppercase">How it works</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            From "I need a truck" to{" "}
+          <h2 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight">
+            From "I need a truck"
+            <br />
+            to{" "}
             <span className="text-yellow-400">"on the way"</span>
           </h2>
-          <p className="text-slate-400 text-sm md:text-base max-w-xl mx-auto">
-            No app maze, no broker hunting. A simple flow that works the same
-            way for mini trucks and 32 ft containers.
+          <p className="text-slate-400 text-base md:text-lg max-w-lg">
+            No app maze, no broker hunting. A simple 3-step flow for any truck,
+            any load, any distance.
           </p>
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 relative">
+          <div className="hidden md:block absolute top-8 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px bg-gradient-to-r from-yellow-500/20 via-blue-500/20 to-emerald-500/20" />
 
-          {/* Connector line on desktop */}
-          <div className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-yellow-500/20 via-blue-500/20 to-emerald-500/20" />
-
-          {steps.map((step, index) => (
+          {steps.map((step, i) => (
             <div
               key={step.title}
-              className={`relative rounded-2xl bg-gradient-to-b ${step.color} border ${step.border} ${step.glow} p-6 flex flex-col group hover:scale-[1.02] transition-all duration-300`}
+              className={`relative rounded-2xl bg-gradient-to-b ${step.color} border ${step.border} p-7 flex flex-col hover:scale-[1.02] hover:shadow-2xl transition-all duration-300`}
             >
-              {/* Step number */}
-              <div className="flex items-center justify-between mb-5">
-                <div className="text-4xl font-black text-white/5 select-none">
+              <div className="flex items-start justify-between mb-6">
+                <span className={`text-5xl font-black ${step.accent} opacity-20 select-none leading-none`}>
                   {step.number}
-                </div>
-                <div className="text-3xl">{step.icon}</div>
+                </span>
+                <span className="text-4xl">{step.icon}</span>
               </div>
-
-              {/* Badge */}
-              <span className="inline-flex items-center rounded-full bg-slate-800/80 border border-slate-700 px-2.5 py-0.5 text-[10px] text-slate-300 font-medium w-fit mb-3">
-                {step.badge}
-              </span>
-
-              {/* Title */}
-              <h3 className="text-base md:text-lg font-semibold text-white mb-2">
-                {step.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-                {step.desc}
-              </p>
-
-              {/* Arrow for non-last items */}
-              {index < steps.length - 1 && (
-                <div className="md:hidden mt-4 text-slate-600 text-center text-xl">
-                  ↓
+              <h3 className="text-lg font-bold text-white mb-3">{step.title}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed flex-1">{step.desc}</p>
+              {i < steps.length - 1 && (
+                <div className="md:hidden mt-5 flex justify-center">
+                  <span className="text-slate-700 text-2xl">↓</span>
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-14 text-center">
-          <p className="text-slate-400 text-sm mb-2">
-            Takes less than 60 seconds to book
-          </p>
-          <div className="flex items-center justify-center gap-6 text-[11px] text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Available 24/7
+        {/* Bottom strip */}
+        <div className="mt-14 flex flex-wrap items-center gap-8">
+          {[
+            { dot: "bg-emerald-400", text: "Available 24/7" },
+            { dot: "bg-blue-400", text: "SMS updates at every step" },
+            { dot: "bg-yellow-400", text: "No advance payment" },
+            { dot: "bg-purple-400", text: "Takes under 60 seconds" },
+          ].map((item) => (
+            <span key={item.text} className="flex items-center gap-2 text-[12px] text-slate-500">
+              <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />
+              {item.text}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              SMS updates
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-              No advance payment
-            </span>
-          </div>
+          ))}
         </div>
-
       </div>
     </section>
   );

@@ -9,20 +9,22 @@ const BottomNav = ({ onBookClick, onScrollTo }) => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800/60 bg-slate-950/95 backdrop-blur-md">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800/50 bg-slate-950/98 backdrop-blur-xl">
+      <div className="flex items-center justify-around h-16 px-1 max-w-lg mx-auto">
         {items.map((item) => (
           <button
             key={item.label}
             onClick={item.action}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all active:scale-95 ${
               item.highlight
-                ? "bg-yellow-400/10 border border-yellow-400/20"
-                : "hover:bg-slate-800/50"
+                ? "bg-yellow-400/15 border border-yellow-400/25 shadow-[0_0_12px_rgba(250,204,21,0.15)]"
+                : "hover:bg-slate-800/60"
             }`}
           >
-            <span className="text-xl">{item.icon}</span>
-            <span className={`text-[10px] font-medium ${item.highlight ? "text-yellow-300" : "text-slate-400"}`}>
+            <span className="text-lg leading-none">{item.icon}</span>
+            <span className={`text-[10px] font-medium leading-none ${
+              item.highlight ? "text-yellow-300" : "text-slate-500"
+            }`}>
               {item.label}
             </span>
           </button>
