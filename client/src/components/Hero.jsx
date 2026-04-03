@@ -6,7 +6,7 @@ const Hero = ({ onBookClick }) => {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('https://images.pexels.com/photos/5205123/pexels-photo-5205123.jpeg')",
+          backgroundImage: ('../assets/hero.jpg'),
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/30" />
