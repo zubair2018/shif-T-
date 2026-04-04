@@ -12,7 +12,6 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
 - [Usage Guide](#usage-guide)
-- [File Structure](#file-structure)
 - [Future Enhancements](#future-enhancements)
 
 ---
@@ -64,42 +63,6 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 - **Render/Railway** - Backend (recommended)
 
 ---
-
-## 📁 Project Structure
-
-shif-T-/
-├── client/ # Frontend React app
-│ ├── src/
-│ │ ├── components/ # Reusable components
-│ │ │ ├── AppHeader.jsx
-│ │ │ ├── BottomNav.jsx
-│ │ │ ├── BookingModal.jsx # Customer booking form
-│ │ │ ├── PartnerModal.jsx # Driver signup form
-│ │ │ ├── Hero.jsx
-│ │ │ ├── HowItWorks.jsx
-│ │ │ ├── Services.jsx
-│ │ │ ├── Plans.jsx
-│ │ │ └── ...other components
-│ │ ├── App.jsx # Main router
-│ │ ├── AdminPage.jsx # Admin dashboard
-│ │ ├── DriverPage.jsx # Driver dashboard
-│ │ ├── main.jsx # Entry point
-│ │ └── index.css
-│ ├── package.json
-│ └── vite.config.js
-│
-├── server/ # Backend Node/Express app
-│ ├── index.js # Main server file with all routes
-│ ├── serviceAccountKey.json # Firebase credentials (gitignored)
-│ ├── package.json
-│ └── .gitignore
-│
-├── README.md # This file
-└── .gitignore
-
-
-
-
 ### Prerequisites
 
 1. **Node.js** (v16+) and **npm**
