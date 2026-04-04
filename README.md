@@ -11,7 +11,6 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
 - [Usage Guide](#usage-guide)
-- [File Structure](#file-structure)
 - [Future Enhancements](#future-enhancements)
 
 ---
@@ -63,7 +62,10 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 - **Render/Railway** - Backend (recommended)
 
 ---
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5c5de64e944250838d6e7928ecec4e238e6de613
 ### Prerequisites
 
 1. **Node.js** (v16+) and **npm**
