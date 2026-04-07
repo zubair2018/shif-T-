@@ -1,4 +1,4 @@
-# ShifT - Logistics & Transport Management Platform
+# Shify - Logistics & Transport Management Platform
 
 A modern, full-stack logistics platform that connects customers, drivers, and admins for seamless freight and transport operations.
 
@@ -61,11 +61,7 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 - **Vercel/Netlify** - Frontend (recommended)
 - **Render/Railway** - Backend (recommended)
 
----
-<<<<<<< HEAD
 
-=======
->>>>>>> 5c5de64e944250838d6e7928ecec4e238e6de613
 ### Prerequisites
 
 1. **Node.js** (v16+) and **npm**

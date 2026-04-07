@@ -102,4 +102,4 @@ const AppHeader = ({ onPartnerClick, onBookClick, onScrollTo }) => {
   );
 };
 
-export default AppHeader;
+export default AppHeader;  

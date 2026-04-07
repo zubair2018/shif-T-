@@ -1,11 +1,12 @@
 // src/components/Hero.jsx
-import heroImage from '../assets/hero.jpg';
+//import heroImage from '../assets/hero.jpg';
 
 const Hero = ({ onBookClick }) => {
   return (
     <section id="top" className="relative min-h-[88vh] flex items-center">
+      
       {/* Background */}
-      <div
+      {/* <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${heroImage})`,
@@ -19,7 +20,7 @@ const Hero = ({ onBookClick }) => {
           backgroundImage: `linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)`,
           backgroundSize: "50px 50px",
         }}
-      />
+      /> */}
 
       {/* Content */}
       <div className="relative mx-auto max-w-6xl px-6 py-16 w-full">
