@@ -1,26 +1,28 @@
 // src/components/Hero.jsx
-//import heroImage from '../assets/hero.jpg';
-
 const Hero = ({ onBookClick }) => {
   return (
     <section id="top" className="relative min-h-[88vh] flex items-center">
-      
-      {/* Background */}
-      {/* <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${heroImage})`,
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/30" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/50" />
+      {/* Fast CSS background — no external image */}
+      <div className="absolute inset-0 bg-slate-950" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_110%_50%,rgba(250,204,21,0.08),transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_-10%_80%,rgba(59,130,246,0.06),transparent)]" />
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)`,
           backgroundSize: "50px 50px",
         }}
-      /> */}
+      />
+
+      {/* Decorative truck silhouette — pure CSS, no image */}
+      <div className="absolute right-0 top-0 bottom-0 w-1/2 overflow-hidden hidden md:block">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent z-10" />
+        <div className="absolute right-10 top-1/2 -translate-y-1/2 text-[200px] opacity-5 select-none">
+          🚛
+        </div>
+        <div className="absolute right-32 bottom-20 text-[80px] opacity-5 select-none">📦</div>
+        <div className="absolute right-20 top-20 text-[60px] opacity-5 select-none">🗺️</div>
+      </div>
 
       {/* Content */}
       <div className="relative mx-auto max-w-6xl px-6 py-16 w-full">
@@ -70,7 +72,7 @@ const Hero = ({ onBookClick }) => {
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <button
               onClick={onBookClick}
-              className="group px-7 py-3.5 rounded-full bg-yellow-400 text-slate-950 font-black text-sm hover:bg-yellow-300 transition-all shadow-[0_0_30px_rgba(250,204,21,0.45)] hover:shadow-[0_0_50px_rgba(250,204,21,0.6)] hover:scale-105 active:scale-95"
+              className="group px-7 py-3.5 rounded-full bg-yellow-400 text-slate-950 font-black text-sm hover:bg-yellow-300 transition-all shadow-[0_0_30px_rgba(250,204,21,0.45)] hover:scale-105 active:scale-95"
             >
               Book a Truck
               <span className="ml-2 inline-block group-hover:translate-x-1 transition-transform">→</span>
@@ -95,7 +97,6 @@ const Hero = ({ onBookClick }) => {
         </div>
       </div>
 
-      {/* Bottom fade — reduced height */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-950 to-transparent" />
     </section>
   );
