@@ -8,6 +8,24 @@ const TRUCK_TYPES = [
   { value: "factory-truck", label: "Factory Truck" },
 ];
 
+const BASE_AREAS = [
+  { zone: "Srinagar", areas: [
+    "Lal Chowk", "Residency Road", "MA Road", "Batmaloo",
+    "Hyderpora", "Rajbagh", "Jawahar Nagar", "Sanat Nagar",
+    "Bemina", "Baghat", "Hazratbal", "Nishat", "Shalimar",
+    "Rainawari", "Nowhatta",
+  ]},
+  { zone: "Anantnag", areas: [
+    "Anantnag Town", "Bijbehara", "Mattan", "Achabal",
+    "Pahalgam", "Kokernag", "Verinag", "Dooru",
+    "Shangus", "Srigufwara",
+  ]},
+  { zone: "Pulwama", areas: [
+    "Pulwama Town", "Pampore", "Tral", "Awantipora",
+    "Lassipora", "Rajpora", "Kakapora",
+  ]},
+];
+
 function validateLicense(license) {
   const cleaned = license.replace(/[-\s]/g, "").toUpperCase();
   return /^[A-Z]{2}[0-9]{2}[0-9]{4}[0-9]{7}$/.test(cleaned);
@@ -35,19 +53,12 @@ const PartnerModal = ({ onClose }) => {
     const { name, value } = e.target;
     let processedValue = value;
 
-    if (name === "phone") {
-      processedValue = value.replace(/\D/g, "").slice(0, 10);
-    }
-    if (name === "aadharNumber") {
-      processedValue = value.replace(/\D/g, "").slice(0, 12);
-    }
-    if (name === "drivingLicenseNo") {
-      processedValue = value.toUpperCase().slice(0, 15);
-    }
+    if (name === "phone") processedValue = value.replace(/\D/g, "").slice(0, 10);
+    if (name === "aadharNumber") processedValue = value.replace(/\D/g, "").slice(0, 12);
+    if (name === "drivingLicenseNo") processedValue = value.toUpperCase().slice(0, 15);
 
     setForm((prev) => ({ ...prev, [name]: processedValue }));
 
-    // Live validation
     let error = "";
     if (name === "phone" && processedValue.length > 0 && processedValue.length < 10) {
       error = "Enter complete 10-digit number";
@@ -68,7 +79,7 @@ const PartnerModal = ({ onClose }) => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Name is required";
     if (!form.phone || form.phone.length !== 10) newErrors.phone = "Valid 10-digit phone required";
-    if (!form.city.trim()) newErrors.city = "Base area is required";
+    if (!form.city) newErrors.city = "Please select your base area";
     if (!form.truckTypes) newErrors.truckTypes = "Please select truck type";
     if (form.drivingLicenseNo && !validateLicense(form.drivingLicenseNo)) {
       newErrors.drivingLicenseNo = "Invalid license format";
@@ -87,10 +98,7 @@ const PartnerModal = ({ onClose }) => {
       setStatus("loading");
       await createDriverApi(form);
       setStatus("success");
-      setTimeout(() => {
-        setStatus("idle");
-        onClose && onClose();
-      }, 2000);
+      setTimeout(() => { setStatus("idle"); onClose && onClose(); }, 2000);
     } catch (err) {
       console.error("Partner submit failed:", err);
       setStatus("error");
@@ -103,7 +111,7 @@ const PartnerModal = ({ onClose }) => {
       <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">Partner with ShifT</h2>
+            <h2 className="text-sm font-semibold text-slate-100">Partner with Shifty</h2>
             <p className="text-[11px] text-slate-400">Register as a driver</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white text-lg">✕</button>
@@ -135,9 +143,7 @@ const PartnerModal = ({ onClose }) => {
             {/* Phone */}
             <div>
               <div className="flex">
-                <span className="bg-slate-700 border border-slate-600 border-r-0 rounded-l-md px-3 flex items-center text-slate-300 text-[12px] font-medium">
-                  +91
-                </span>
+                <span className="bg-slate-700 border border-slate-600 border-r-0 rounded-l-md px-3 flex items-center text-slate-300 text-[12px] font-medium">+91</span>
                 <input
                   name="phone"
                   value={form.phone}
@@ -150,16 +156,31 @@ const PartnerModal = ({ onClose }) => {
               {errors.phone && <p className="text-red-400 text-[11px] mt-0.5">⚠️ {errors.phone}</p>}
             </div>
 
-            {/* Base Area */}
+            {/* Base Area — Dropdown grouped by zone */}
             <div>
-              <input
+              <select
                 name="city"
                 value={form.city}
                 onChange={handleChange}
-                placeholder="Base area (city/town) *"
-                className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px] placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
-              />
+                className="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-slate-100 text-[12px] focus:outline-none focus:border-blue-500"
+              >
+                <option value="">Select your base area *</option>
+                {BASE_AREAS.map((zone) => (
+                  <optgroup key={zone.zone} label={`── ${zone.zone} ──`}>
+                    {zone.areas.map((area) => (
+                      <option key={area} value={area}>{area}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               {errors.city && <p className="text-red-400 text-[11px] mt-0.5">⚠️ {errors.city}</p>}
+              {form.city && (
+                <p className="text-emerald-400 text-[11px] mt-0.5">
+                  ✓ You'll receive loads from the entire {
+                    BASE_AREAS.find(z => z.areas.includes(form.city))?.zone
+                  } zone
+                </p>
+              )}
             </div>
 
             {/* Truck Type */}
@@ -185,9 +206,7 @@ const PartnerModal = ({ onClose }) => {
                 value={form.drivingLicenseNo}
                 onChange={handleChange}
                 placeholder="Driving license no. (e.g. KA0120201234567)"
-                className={`w-full rounded-md bg-slate-950 border px-3 py-2 text-slate-100 text-[12px] placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${
-                  errors.drivingLicenseNo ? "border-red-500" : "border-slate-700"
-                }`}
+                className={`w-full rounded-md bg-slate-950 border px-3 py-2 text-slate-100 text-[12px] placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${errors.drivingLicenseNo ? "border-red-500" : "border-slate-700"}`}
               />
               {errors.drivingLicenseNo
                 ? <p className="text-red-400 text-[11px] mt-0.5">⚠️ {errors.drivingLicenseNo}</p>
@@ -203,9 +222,7 @@ const PartnerModal = ({ onClose }) => {
                 onChange={handleChange}
                 placeholder="Aadhaar number (12 digits)"
                 type="tel"
-                className={`w-full rounded-md bg-slate-950 border px-3 py-2 text-slate-100 text-[12px] placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${
-                  errors.aadharNumber ? "border-red-500" : "border-slate-700"
-                }`}
+                className={`w-full rounded-md bg-slate-950 border px-3 py-2 text-slate-100 text-[12px] placeholder:text-slate-500 focus:outline-none focus:border-blue-500 ${errors.aadharNumber ? "border-red-500" : "border-slate-700"}`}
               />
               {errors.aadharNumber
                 ? <p className="text-red-400 text-[11px] mt-0.5">⚠️ {errors.aadharNumber}</p>

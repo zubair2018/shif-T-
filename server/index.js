@@ -7,6 +7,7 @@ import * as dotenv from "dotenv";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { areasInSameZone, getZoneName, getZoneForArea, ZONES } from "./zones.js";
 dotenv.config();
 
 const app = express();
@@ -15,7 +16,7 @@ const PORT = process.env.PORT || 4000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Firebase init — works locally and on Render
+// Firebase init
 if (!admin.apps.length) {
   let serviceAccount;
   if (process.env.SERVICE_ACCOUNT_KEY) {
@@ -63,11 +64,7 @@ function truckTypeMatches(driverTrucks, bookingTruck) {
   return list.includes(booking);
 }
 
-function cityMatches(driverCity, bookingCity) {
-  if (!driverCity || !bookingCity) return false;
-  return driverCity.trim().toLowerCase() === bookingCity.trim().toLowerCase();
-}
-
+// ---- SMS sender ----
 async function sendSMS(phone, message) {
   const digits = cleanPhone(phone);
   if (digits.length !== 10) {
@@ -87,10 +84,11 @@ async function sendSMS(phone, message) {
   }
 }
 
+// ---- SMS: Booking confirmation to customer ----
 async function smsBookingConfirmation(booking) {
   await sendSMS(
     booking.phone,
-    `ShifT: Booking Received!\n` +
+    `Shifty: Booking Received!\n` +
     `Hi ${booking.name}, your booking is confirmed.\n` +
     `Pickup: ${booking.pickup}\n` +
     `Drop: ${booking.drop}\n` +
@@ -100,44 +98,63 @@ async function smsBookingConfirmation(booking) {
   );
 }
 
+// ---- SMS: Notify matching drivers using ZONE matching ----
 async function smsNotifyMatchingDrivers(booking) {
   try {
-    const bookingCity = (booking.pickup || "").trim().toLowerCase();
+    const bookingArea = (booking.pickup || "").trim();
     const bookingTruck = (booking.vehicleType || "").trim().toLowerCase();
-    console.log(`🔍 Finding drivers — city:"${bookingCity}" truck:"${bookingTruck}"`);
+    const bookingZone = getZoneForArea(bookingArea);
+
+    console.log(`🔍 Booking area: "${bookingArea}" → Zone: ${bookingZone?.name || "Unknown"}`);
+    console.log(`🚛 Truck type: "${bookingTruck}"`);
+
+    if (!bookingZone) {
+      console.log(`⚠️ No zone found for "${bookingArea}" — no drivers notified`);
+      return;
+    }
 
     const snap = await db.collection("drivers").get();
+    console.log(`📋 Total drivers in DB: ${snap.docs.length}`);
+
     const matching = snap.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((d) => {
         const isActive = (d.status || "").trim() === "active";
-        const c = cityMatches(d.city, bookingCity);
-        const t = truckTypeMatches(d.truckTypes, bookingTruck);
-        console.log(`  → ${d.name} | status:${d.status}(${isActive}) | city:${d.city}(${c}) | truck:${d.truckTypes}(${t})`);
-        return isActive && c && t && d.phone;
+        // Zone-based matching — driver's city must be in same zone as booking pickup
+        const zoneMatch = areasInSameZone(d.city, bookingArea);
+        const truckOk = truckTypeMatches(d.truckTypes, bookingTruck);
+        console.log(
+          `  → ${d.name} | status:${d.status}(${isActive}) | city:${d.city} | zone_match:${zoneMatch} | truck:${d.truckTypes}(${truckOk})`
+        );
+        return isActive && zoneMatch && truckOk && d.phone;
       });
 
     console.log(`✅ Matching drivers: ${matching.length}`);
-    if (matching.length === 0) return;
+    if (matching.length === 0) {
+      console.log(`⚠️ No matching drivers in zone "${bookingZone.name}" for truck "${bookingTruck}"`);
+      return;
+    }
 
     const message =
-      `ShifT: New load in your area!\n` +
+      `Shifty: New load in ${bookingZone.name}!\n` +
       `Pickup: ${booking.pickup}\n` +
       `Drop: ${booking.drop}\n` +
       `Vehicle: ${booking.vehicleType}\n` +
       `Time: ${booking.time}\n` +
       `Customer: ${booking.name}\n` +
       `Login to accept: https://shifty-app-jet.vercel.app/driver`;
+
     await Promise.all(matching.map((d) => sendSMS(d.phone, message)));
   } catch (err) {
     console.error("❌ smsNotifyMatchingDrivers error:", err);
   }
 }
 
+// ---- SMS: Notify customer when driver assigned ----
 async function smsDriverAssignedToCustomer(booking, driver) {
   await sendSMS(
     booking.phone,
-    `ShifT: Driver Assigned!\n` +
+    `Shifty: Driver Assigned!\n` +
     `Hi ${booking.name}, a driver is on the way.\n` +
     `Driver: ${driver.name}\n` +
     `Phone: +91${driver.phone}\n` +
@@ -147,10 +164,11 @@ async function smsDriverAssignedToCustomer(booking, driver) {
   );
 }
 
+// ---- SMS: Notify driver when admin assigns them ----
 async function smsDriverAssigned(driver, booking) {
   await sendSMS(
     driver.phone,
-    `ShifT: Load Assigned to You!\n` +
+    `Shifty: Load Assigned to You!\n` +
     `Hi ${driver.name}!\n` +
     `Pickup: ${booking.pickup}\n` +
     `Drop: ${booking.drop}\n` +
@@ -165,12 +183,22 @@ async function smsDriverAssigned(driver, booking) {
 // ---- Routes ----
 
 app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "ShifT API running" });
+  res.json({ status: "ok", message: "Shifty API running" });
 });
 
+// Get zones list — for frontend dropdowns
+app.get("/zones", (req, res) => {
+  res.json(ZONES.map((z) => ({
+    id: z.id,
+    name: z.name,
+    areas: z.areas,
+  })));
+});
+
+// City bookings — zone-based matching, MUST be before /bookings/:id
 app.get("/bookings/city/:city", async (req, res) => {
   try {
-    const city = req.params.city.trim().toLowerCase();
+    const city = req.params.city.trim();
     const driverId = req.query.driverId || null;
     const truckType = req.query.truckType || "";
 
@@ -187,12 +215,13 @@ app.get("/bookings/city/:city", async (req, res) => {
         .get();
     }
 
+    // Use zone matching for pending bookings
     const pendingData = pendingSnap.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((b) => {
-        const cityOk = b.pickup && b.pickup.trim().toLowerCase() === city;
+        const zoneMatch = areasInSameZone(city, b.pickup);
         const truckOk = truckTypeMatches(truckType, b.vehicleType);
-        return cityOk && truckOk;
+        return zoneMatch && truckOk;
       });
 
     const assignedData = assignedSnap.docs
@@ -203,10 +232,12 @@ app.get("/bookings/city/:city", async (req, res) => {
     all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json(all);
   } catch (err) {
+    console.error("Get city bookings failed", err);
     res.status(500).json({ error: "Failed to load city bookings" });
   }
 });
 
+// List all bookings
 app.get("/bookings", async (req, res) => {
   try {
     const snap = await db
@@ -219,6 +250,7 @@ app.get("/bookings", async (req, res) => {
   }
 });
 
+// Create booking — auto notifies matching drivers
 app.post("/bookings", async (req, res) => {
   try {
     const { name, phone, pickup, drop, time, vehicleType, loadDetails } = req.body;
@@ -226,6 +258,10 @@ app.post("/bookings", async (req, res) => {
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(", ")}` });
     }
+
+    // Detect zone for pickup area
+    const zone = getZoneForArea(pickup);
+
     const booking = {
       name: String(name).trim(),
       phone: cleanPhone(phone),
@@ -234,14 +270,20 @@ app.post("/bookings", async (req, res) => {
       time: String(time).trim(),
       vehicleType: String(vehicleType || "mini-truck").trim(),
       loadDetails: String(loadDetails || "").trim(),
+      zone: zone ? zone.id : null,
+      zoneName: zone ? zone.name : null,
       status: "pending",
       driverId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
     const docRef = await db.collection("bookings").add(booking);
+
+    // Fire and forget
     smsBookingConfirmation(booking);
     smsNotifyMatchingDrivers(booking);
+
     return res.status(201).json({ id: docRef.id, ...booking });
   } catch (err) {
     console.error("Create booking failed", err);
@@ -249,6 +291,7 @@ app.post("/bookings", async (req, res) => {
   }
 });
 
+// Create driver
 app.post("/drivers", async (req, res) => {
   try {
     const { name, phone, city, truckTypes, fleetSize, drivingLicenseNo, aadharNumber } = req.body;
@@ -256,10 +299,16 @@ app.post("/drivers", async (req, res) => {
     if (missing.length > 0) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(", ")}` });
     }
+
+    // Detect zone for driver's city
+    const zone = getZoneForArea(city);
+
     const driver = {
       name: String(name).trim(),
       phone: cleanPhone(phone),
       city: String(city).trim(),
+      zone: zone ? zone.id : null,
+      zoneName: zone ? zone.name : null,
       truckTypes: String(truckTypes || "").trim(),
       fleetSize: String(fleetSize || "").trim(),
       drivingLicenseNo: String(drivingLicenseNo || "").trim(),
@@ -273,24 +322,25 @@ app.post("/drivers", async (req, res) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
     const docRef = await db.collection("drivers").add(driver);
     return res.status(201).json({ id: docRef.id, ...driver });
   } catch (err) {
+    console.error("Create driver failed", err);
     return res.status(500).json({ error: "Failed to create driver" });
   }
 });
 
+// List drivers
 app.get("/drivers", async (req, res) => {
   try {
     if (req.query.authUid) {
-      const snap = await db
-        .collection("drivers")
+      const snap = await db.collection("drivers")
         .where("authUid", "==", req.query.authUid)
         .get();
       return res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     }
-    const snap = await db
-      .collection("drivers")
+    const snap = await db.collection("drivers")
       .orderBy("createdAt", "desc")
       .get();
     res.json(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
@@ -299,6 +349,7 @@ app.get("/drivers", async (req, res) => {
   }
 });
 
+// Approve driver
 app.patch("/drivers/:id/approve", async (req, res) => {
   try {
     const ref = db.collection("drivers").doc(req.params.id);
@@ -310,6 +361,7 @@ app.patch("/drivers/:id/approve", async (req, res) => {
   }
 });
 
+// Deactivate driver
 app.patch("/drivers/:id/deactivate", async (req, res) => {
   try {
     const ref = db.collection("drivers").doc(req.params.id);
@@ -321,6 +373,7 @@ app.patch("/drivers/:id/deactivate", async (req, res) => {
   }
 });
 
+// Link authUid
 app.patch("/drivers/:id/link-auth", async (req, res) => {
   try {
     const { authUid } = req.body;
@@ -334,45 +387,79 @@ app.patch("/drivers/:id/link-auth", async (req, res) => {
   }
 });
 
+// Assign driver (admin) — SMS to driver + customer
 app.patch("/bookings/:id/assign-driver", async (req, res) => {
   try {
     const { driverId } = req.body;
     if (!driverId) return res.status(400).json({ error: "driverId required" });
+
     const bookingRef = db.collection("bookings").doc(req.params.id);
     const bookingSnap = await bookingRef.get();
     if (!bookingSnap.exists) return res.status(404).json({ error: "Booking not found" });
+
     const driverRef = db.collection("drivers").doc(driverId);
     const driverSnap = await driverRef.get();
     if (!driverSnap.exists) return res.status(404).json({ error: "Driver not found" });
+
     await bookingRef.update({
       driverId,
       status: "assigned",
       updatedAt: new Date().toISOString(),
     });
+
     const booking = { ...bookingSnap.data(), id: req.params.id };
     const driver = { ...driverSnap.data(), id: driverId };
+
     smsDriverAssigned(driver, booking);
     smsDriverAssignedToCustomer(booking, driver);
+
     res.json({ success: true });
   } catch (err) {
+    console.error("Assign driver failed", err);
     res.status(500).json({ error: "Failed to assign driver" });
   }
 });
 
+// Update booking status — SMS on trip start/complete
 app.patch("/bookings/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
     const allowed = ["pending", "assigned", "accepted", "on_trip", "completed", "cancelled"];
     if (!allowed.includes(status)) return res.status(400).json({ error: "Invalid status" });
+
     const ref = db.collection("bookings").doc(req.params.id);
-    if (!(await ref.get()).exists) return res.status(404).json({ error: "Booking not found" });
+    const snap = await ref.get();
+    if (!snap.exists) return res.status(404).json({ error: "Booking not found" });
+
     await ref.update({ status, updatedAt: new Date().toISOString() });
+
+    const booking = snap.data();
+
+    if (status === "on_trip" && booking.phone) {
+      sendSMS(
+        booking.phone,
+        `Shifty: Your trip has started!\n` +
+        `Driver is on the way.\n` +
+        `Route: ${booking.pickup} → ${booking.drop}`
+      );
+    }
+
+    if (status === "completed" && booking.phone) {
+      sendSMS(
+        booking.phone,
+        `Shifty: Trip Completed! ✅\n` +
+        `Your delivery from ${booking.pickup} to ${booking.drop} is complete.\n` +
+        `Thank you for using Shifty!`
+      );
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update status" });
   }
 });
 
+// Self-assign (atomic)
 app.patch("/bookings/:id/self-assign", async (req, res) => {
   try {
     const { driverId } = req.body;
@@ -396,6 +483,7 @@ app.patch("/bookings/:id/self-assign", async (req, res) => {
   }
 });
 
+// Release load
 app.patch("/bookings/:id/release", async (req, res) => {
   try {
     const { driverId } = req.body;
@@ -415,50 +503,25 @@ app.patch("/bookings/:id/release", async (req, res) => {
   }
 });
 
-app.patch("/bookings/:id/status", async (req, res) => {
+// Driver response
+app.patch("/bookings/:id/driver-response", async (req, res) => {
   try {
-    const { status } = req.body;
-    const allowed = ["pending", "assigned", "accepted", "on_trip", "completed", "cancelled"];
-    if (!allowed.includes(status)) return res.status(400).json({ error: "Invalid status" });
-
+    const { action } = req.body;
+    if (!["accept", "reject"].includes(action)) return res.status(400).json({ error: "Invalid action" });
     const ref = db.collection("bookings").doc(req.params.id);
-    const snap = await ref.get();
-    if (!snap.exists) return res.status(404).json({ error: "Booking not found" });
-
-    await ref.update({ status, updatedAt: new Date().toISOString() });
-
-    const booking = snap.data();
-
-    // SMS customer when trip starts
-    if (status === "on_trip" && booking.phone) {
-      sendSMS(
-        booking.phone,
-        `ShifT: Your trip has started!\n` +
-        `Driver is on the way.\n` +
-        `Route: ${booking.pickup} → ${booking.drop}`
-      );
-    }
-
-    // SMS customer when trip completes
-    if (status === "completed" && booking.phone) {
-      sendSMS(
-        booking.phone,
-        `ShifT: Trip Completed! ✅\n` +
-        `Your delivery from ${booking.pickup} to ${booking.drop} is complete.\n` +
-        `Thank you for using ShifT!`
-      );
-    }
-
-    res.json({ success: true });
+    if (!(await ref.get()).exists) return res.status(404).json({ error: "Booking not found" });
+    const newStatus = action === "accept" ? "accepted" : "pending";
+    await ref.update({ status: newStatus, updatedAt: new Date().toISOString() });
+    res.json({ success: true, status: newStatus });
   } catch (err) {
-    res.status(500).json({ error: "Failed to update status" });
+    res.status(500).json({ error: "Failed to update booking" });
   }
 });
 
+// Get driver's bookings
 app.get("/drivers/:id/bookings", async (req, res) => {
   try {
-    const snap = await db
-      .collection("bookings")
+    const snap = await db.collection("bookings")
       .where("driverId", "==", req.params.id)
       .get();
     const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -470,5 +533,15 @@ app.get("/drivers/:id/bookings", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ ShifT API running on http://localhost:${PORT}`);
+  console.log(`✅ Shifty API running on http://localhost:${PORT}`);
+
+  // Keep Render free tier awake
+  if (process.env.NODE_ENV === "production") {
+    setInterval(async () => {
+      try {
+        await fetch("https://shifty-backend-tvhs.onrender.com/");
+        console.log("🏓 Keep-alive ping sent");
+      } catch (e) {}
+    }, 14 * 60 * 1000);
+  }
 });
