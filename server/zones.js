@@ -1,5 +1,5 @@
 // server/zones.js
-// Zone-based area matching for Shifty
+// Zone-based area matching.
 // Each zone contains areas that are close enough to match
 
 export const ZONES = [

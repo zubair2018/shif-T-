@@ -41,6 +41,8 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://shifty-app-jet.vercel.app",
+      "https://shifty.in",
+      "https://www.shifty.in",
       /\.vercel\.app$/,
     ],
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
