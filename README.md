@@ -6,14 +6,6 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Installation](#installation)
-- [Running the Application](#running-the-application)
-- [API Endpoints](#api-endpoints)
-- [Usage Guide](#usage-guide)
-- [Future Enhancements](#future-enhancements)
-
----
 
 ## ✨ Features
 
@@ -52,18 +44,3 @@ A modern, full-stack logistics platform that connects customers, drivers, and ad
 - **Node.js** - Runtime environment
 - **Express.js** - Server framework
 - **Firebase Admin SDK** - Database & authentication
-
-### Database
-- **Google Firestore** - NoSQL cloud database
-- **Firebase Authentication** - User authentication
-
-### Deployment
-- **Vercel/Netlify** - Frontend (recommended)
-- **Render/Railway** - Backend (recommended)
-
-
-### Prerequisites
-
-1. **Node.js** (v16+) and **npm**
-2. **Firebase Project** - Create one at [Firebase Console](https://console.firebase.google.com)
-3. **Git** - For version control
